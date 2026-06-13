@@ -1,223 +1,164 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 
-const deliveryRequests = [
-  { id: 'D-401', store: 'متجر الهناء للمواد الغذائية', destination: 'حي الضلعة', distance: '1.8 كم', earnings: '150 د.ج' },
-  { id: 'D-402', store: 'مطعم ومشاوي القصر', destination: 'حي قصر البلاد', distance: '3.2 كم', earnings: '250 د.ج' },
-];
-
 export default function DeliveryDashboard() {
-  const [vehicle, setVehicle] = useState<'motorcycle' | 'car'>('motorcycle');
+  // محاكاة لعدد التوصيلات الحالية للموزع
+  const [deliveryCounter, setDeliveryCounter] = useState(48); 
+  const [isSuspended, setIsSuspended] = useState(false);
 
-  const handleAccept = (id: string) => {
-    Alert.alert('تم القبول', `الطلب ${id} قيد التنفيذ الآن. توجه إلى المتجر لاستلام الشحنة.`);
+  // إعدادات النظام المالي الثابتة
+  const DELIVERY_FEE = 100; // سعر التوصيل الثابت داخل المدينة
+  const SITE_COMMISSION_PCT = 0.20; // 20% نسبة الموقع
+  const SITE_CUT_PER_TRIP = DELIVERY_FEE * SITE_COMMISSION_PCT; // 20 دج عن كل توصيلة
+  const DRIVER_PROFIT_PER_TRIP = DELIVERY_FEE - SITE_CUT_PER_TRIP; // 80 دج صافي للموزع
+
+  // حساب المبالغ تلقائياً بناءً على العداد
+  const totalDriverEarnings = deliveryCounter * DRIVER_PROFIT_PER_TRIP; // صافي أرباح الموزع كاش
+  const totalOwedToSite = deliveryCounter * SITE_CUT_PER_TRIP; // المبلغ المطلوب دفعه للموقع
+
+  // حساب بريدي موب الرسمي والخاص بصاحب الموقع لمدينة عين الصفراء
+  const BARIDIMOB_RIP = "00799999000524201107"; 
+
+  const handleAcceptDelivery = (id: string) => {
+    // التحقق أولاً إذا كان الحساب قد وصل لـ 50 توصيلة وجب حظره
+    if (deliveryCounter >= 50) {
+      Alert.alert("عذراً!", "تم تعطيل حسابك مؤقتاً لوصولك إلى الحد الأقصى (50 توصيلة). يرجى الدفع عبر بريدي موب لتفعيل الحساب.");
+      return;
+    }
+
+    // إذا كان الحساب نشطاً، يتم قبول الطلب وزيادة العداد
+    Alert.alert('تم قبول الشحنة', `توجه إلى المحل لاستلام الطلب.`);
+    const nextCount = deliveryCounter + 1;
+    setDeliveryCounter(nextCount);
   };
 
   return (
     <View style={styles.container}>
-      {/* هيدر لوحة التحكم للموصل */}
+      {/* هيدر لوحة التحكم */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>لوحة تحكم الموصل 🛵</Text>
-        <Text style={styles.deliveryName}>مرحبا بك، كابتن إكسبريس</Text>
+        <Text style={styles.deliveryStatus}>
+          حالة الحساب: {deliveryCounter >= 50 ? "🔴 معطل مؤقتاً" : "🟢 نشط وجاهز"}
+        </Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* إعداد نوع المركبة - Vehicle Profile Setup */}
-        <Text style={styles.sectionTitle}>إعداد ملف المركبة الحالي</Text>
-        <View style={styles.vehicleContainer}>
-          <TouchableOpacity
-            style={[styles.vehicleCard, vehicle === 'car' && styles.activeVehicleCard]}
-            onPress={() => setVehicle('car')}
-          >
-            <Text style={styles.vehicleIcon}>🚗</Text>
-            <Text style={[styles.vehicleText, vehicle === 'car' && styles.activeVehicleText]}>سيارة</Text>
-          </TouchableOpacity>
+        
+        {/* 🚨 بطاقة التنبيه والحظر في حال الوصول إلى 50 توصيلة */}
+        {deliveryCounter >= 50 && (
+          <View style={styles.suspendedCard}>
+            <Text style={styles.suspendedTitle}>⚠️ وجب دفع مستحقات الموقع</Text>
+            <Text style={styles.suspendedText}>
+              لقد وصلت إلى <Text style={styles.boldText}>50 توصيلة</Text>. يرجى إرسال مبلغ <Text style={styles.boldText}>1000 د.ج</Text> إلى حساب بريدي موب التالي لإعادة تفعيل الحساب فوراً:
+            </Text>
+            <View style={styles.ripBox}>
+              <Text style={styles.ripLabel}>حساب BaridiMob (RIP):</Text>
+              <Text style={styles.ripValue}>{BARIDIMOB_RIP}</Text>
+            </View>
+            <Text style={styles.warningNote}>* ملاحظة: بعد إرسال الدفع، أرسل لقطة الشاشة إلى الإدارة ليتم فتح الحساب لبدء دورة جديدة.</Text>
+          </View>
+        )}
 
-          <TouchableOpacity
-            style={[styles.vehicleCard, vehicle === 'motorcycle' && styles.activeVehicleCard]}
-            onPress={() => setVehicle('motorcycle')}
+        {/* 📊 حاسبة التوصيلات والملخص المالي الذكي */}
+        <Text style={styles.sectionTitle}>العداد والحاسبة المالية (دورة 50 توصيلة)</Text>
+        <View style={styles.statsCard}>
+          <View style={styles.counterRow}>
+            <Text style={styles.counterValue}>{deliveryCounter} / 50</Text>
+            <Text style={styles.counterLabel}>التوصيلات المكتملة:</Text>
+          </View>
+          
+          {/* شريط تقدم بصري يوضح كم بقي له على الحظر */}
+          <View style={styles.progressBarBackground}>
+            <View style={[styles.progressBarFill, { width: `${Math.min((deliveryCounter / 50) * 100, 100)}%` }]} />
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.financeRow}>
+            <Text style={[styles.financeValue, { color: '#137333' }]}>{totalDriverEarnings} د.ج</Text>
+            <Text style={styles.financeLabel}>صافي أرباحك كاش (80 دج/رحلة):</Text>
+          </View>
+
+          <View style={styles.financeRow}>
+            <Text style={[styles.financeValue, { color: '#C5221F' }]}>{totalOwedToSite} د.ج</Text>
+            <Text style={styles.financeLabel}>مستحقات الموقع (20 دج/رحلة):</Text>
+          </View>
+        </View>
+
+        {/* 💳 بيانات الدفع بريدي موب الثابتة للمراجعة في أي وقت */}
+        <Text style={styles.sectionTitle}>معلومات الدفع للمنصة</Text>
+        <View style={styles.infoCard}>
+          <Text style={styles.infoText}>يمكنك تصفية مستحقات الموقع في أي وقت عبر تطبيق بريدي موب لإعادة تصفير العداد:</Text>
+          <Text style={styles.ripTextSelectable}>RIP: {BARIDIMOB_RIP}</Text>
+          <Text style={styles.infoSubtext}>سعر التوصيل داخل المدينة ثابت: 100 د.ج (اقتطاع 20% للموقع).</Text>
+        </View>
+
+        {/* 📦 طلبات التوصيل المتاحة حالياً */}
+        <Text style={styles.sectionTitle}>الطلبات المتاحة حالياً في المدينة</Text>
+        <View style={styles.requestCard}>
+          <View style={styles.requestHeader}>
+            <Text style={styles.requestId}>شحنة #D-909</Text>
+            <Text style={styles.earningsValue}>100 د.ج</Text>
+          </View>
+          <Text style={styles.routeText}>🏪 من: سوبرماركت الهناء (حي الضلعة)</Text>
+          <Text style={styles.routeText}>📍 إلى: حي قصر البلاد</Text>
+          
+          <TouchableOpacity 
+            style={[styles.acceptButton, deliveryCounter >= 50 && styles.disabledButton]} 
+            onPress={() => handleAcceptDelivery('D-909')}
           >
-            <Text style={styles.vehicleIcon}>🛵</Text>
-            <Text style={[styles.vehicleText, vehicle === 'motorcycle' && styles.activeVehicleText]}>دراجة نارية</Text>
+            <Text style={styles.acceptButtonText}>
+              {deliveryCounter >= 50 ? "الحساب معطل - وجب الدفع" : "قبول التوصيلة (100 دج)"}
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* طلبات التوصيل المتاحة حالياً - Active Requests */}
-        <Text style={styles.sectionTitle}>طلبات التوصيل المتاحة (عين الصفراء)</Text>
-        {deliveryRequests.map((req) => (
-          <View key={req.id} style={styles.requestCard}>
-            <View style={styles.requestHeader}>
-              <Text style={styles.requestId}>شحنة #{req.id}</Text>
-              <Text style={styles.earningsValue}>{req.earnings}</Text>
-            </View>
-
-            <View style={styles.requestDetails}>
-              <Text style={styles.routeText}>🏪 <Text style={styles.boldText}>من:</Text> {req.store}</Text>
-              <Text style={styles.routeText}>📍 <Text style={styles.boldText}>إلى:</Text> {req.destination}</Text>
-              <Text style={styles.routeText}>📏 <Text style={styles.boldText}>المسافة:</Text> {req.distance}</Text>
-            </View>
-
-            {/* أزرار التحكم الفوري - Accept / Reject Controls */}
-            <View style={styles.buttonGroup}>
-              <TouchableOpacity style={styles.rejectButton}>
-                <Text style={styles.rejectButtonText}>رفض</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.acceptButton} onPress={() => handleAccept(req.id)}>
-                <Text style={styles.acceptButtonText}>قبول الطلب</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F4F6F9',
-  },
-  header: {
-    backgroundColor: '#1B2A6B', // الأزرق الداكن الرسمي
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
-    alignItems: 'flex-end',
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    fontFamily: 'Cairo',
-  },
-  deliveryName: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    fontFamily: 'Tajawal',
-    marginTop: 4,
-  },
-  scrollContent: {
-    paddingBottom: 30,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1B2A6B',
-    marginHorizontal: 15,
-    marginTop: 20,
-    marginBottom: 12,
-    textAlign: 'right',
-    fontFamily: 'Cairo',
-  },
-  vehicleContainer: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    paddingHorizontal: 15,
-  },
-  vehicleCard: {
-    width: '48%',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 12,
-    padding: 15,
-    alignItems: 'center',
-  },
-  activeVehicleCard: {
-    borderColor: '#F26522',
-    backgroundColor: 'rgba(242, 101, 34, 0.05)',
-  },
-  vehicleIcon: {
-    fontSize: 32,
-    marginBottom: 4,
-  },
-  vehicleText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#666666',
-    fontFamily: 'Cairo',
-  },
-  activeVehicleText: {
-    color: '#F26522',
-  },
-  requestCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 15,
-    marginBottom: 12,
-    borderRadius: 14,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: '#EFEFEF',
-  },
-  requestHeader: {
-    flexDirection: 'row-reverse',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-    paddingBottom: 10,
-    marginBottom: 12,
-  },
-  requestId: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#1B2A6B',
-    fontFamily: 'Cairo',
-  },
-  earningsValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#137333',
-    fontFamily: 'Cairo',
-  },
-  requestDetails: {
-    alignItems: 'flex-end',
-    marginBottom: 15,
-  },
-  routeText: {
-    fontSize: 13,
-    color: '#444444',
-    fontFamily: 'Tajawal',
-    marginBottom: 6,
-    textAlign: 'right',
-  },
-  boldText: {
-    fontWeight: 'bold',
-    color: '#1B2A6B',
-  },
-  buttonGroup: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  acceptButton: {
-    flex: 2,
-    backgroundColor: '#F26522', // البرتقالي الرسمي للتأكيد والقبول
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginLeft: 10,
-  },
-  acceptButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: 'Cairo',
-  },
-  rejectButton: {
-    flex: 1,
-    backgroundColor: '#F4F6F9',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  rejectButtonText: {
-    color: '#666666',
-    fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: 'Cairo',
-  },
+  container: { flex: 1, backgroundColor: '#F4F6F9' },
+  header: { backgroundColor: '#1B2A6B', padding: 20, alignItems: 'flex-end' },
+  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'Cairo' },
+  deliveryStatus: { fontSize: 14, color: '#FFD54F', fontFamily: 'Tajawal', marginTop: 4, fontWeight: 'bold' },
+  scrollContent: { paddingBottom: 30 },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#1B2A6B', marginHorizontal: 15, marginTop: 20, marginBottom: 10, textAlign: 'right', fontFamily: 'Cairo' },
+  
+  suspendedCard: { backgroundColor: '#FCE8E6', margin: 15, borderRadius: 12, padding: 15, borderWidth: 1, borderColor: '#C5221F' },
+  suspendedTitle: { fontSize: 16, fontWeight: 'bold', color: '#C5221F', textAlign: 'right', fontFamily: 'Cairo', marginBottom: 6 },
+  suspendedText: { fontSize: 13, color: '#333333', textAlign: 'right', fontFamily: 'Tajawal', lineHeight: 20 },
+  ripBox: { backgroundColor: '#FFFFFF', padding: 10, borderRadius: 8, marginTop: 10, borderWidth: 1, borderColor: '#EA4335', alignItems: 'center' },
+  ripLabel: { fontSize: 11, color: '#666', fontFamily: 'Tajawal' },
+  ripValue: { fontSize: 14, fontWeight: 'bold', color: '#1B2A6B', marginTop: 2 },
+  warningNote: { fontSize: 11, color: '#C5221F', textAlign: 'right', marginTop: 8, fontFamily: 'Tajawal', fontStyle: 'italic' },
+  
+  statsCard: { backgroundColor: '#FFFFFF', marginHorizontal: 15, borderRadius: 14, padding: 15, borderWidth: 1, borderColor: '#EFEFEF' },
+  counterRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  counterValue: { fontSize: 18, fontWeight: 'bold', color: '#1B2A6B' },
+  counterLabel: { fontSize: 14, fontWeight: 'bold', color: '#333', fontFamily: 'Cairo' },
+  progressBarBackground: { height: 8, backgroundColor: '#E0E0E0', borderRadius: 4, overflow: 'hidden', marginBottom: 10 },
+  progressBarFill: { height: '100%', backgroundColor: '#F26522' },
+  divider: { height: 1, backgroundColor: '#F0F0F0', marginVertical: 10 },
+  financeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  financeValue: { fontSize: 15, fontWeight: 'bold' },
+  financeLabel: { fontSize: 13, color: '#666666', fontFamily: 'Tajawal' },
+  
+  infoCard: { backgroundColor: '#E8F0FE', marginHorizontal: 15, padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#1A73E8' },
+  infoText: { fontSize: 13, color: '#1B2A6B', textAlign: 'right', fontFamily: 'Tajawal' },
+  ripTextSelectable: { fontSize: 14, fontWeight: 'bold', color: '#F26522', textAlign: 'center', marginVertical: 8 },
+  infoSubtext: { fontSize: 11, color: '#555555', textAlign: 'right', fontFamily: 'Tajawal' },
+  
+  requestCard: { backgroundColor: '#FFFFFF', marginHorizontal: 15, marginTop: 10, borderRadius: 14, padding: 15, borderWidth: 1, borderColor: '#EFEFEF' },
+  requestHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#F0F0F0', paddingBottom: 8, marginBottom: 10 },
+  requestId: { fontSize: 14, fontWeight: 'bold', color: '#1B2A6B' },
+  earningsValue: { fontSize: 16, fontWeight: 'bold', color: '#F26522' },
+  routeText: { fontSize: 13, color: '#444444', fontFamily: 'Tajawal', marginBottom: 4, textAlign: 'right' },
+  
+  acceptButton: { backgroundColor: '#F26522', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginTop: 10 },
+  disabledButton: { backgroundColor: '#BCC1C6' },
+  acceptButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'Cairo' },
+  boldText: { fontWeight: 'bold', color: '#C5221F' }
 });
+                  
