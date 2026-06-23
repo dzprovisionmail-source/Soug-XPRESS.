@@ -1,7 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabase';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput } from 'react-native';
 
 export default function MerchantDashboard() {
+  const [displayStoreName, setDisplayStoreName] = useState('جاري تحميل اسم المتجر...');
+  const [merchantId, setMerchantId] = useState(null);
+
+  useEffect(() => {
+    async function loadMerchantData() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setMerchantId(user.id);
+          const { data: storeData } = await supabase.from('stores').select('name').eq('id', user.id).single();
+          if (storeData && storeData.name) {
+            setDisplayStoreName(storeData.name + ' (عين الصفراء)');
+          }
+          const { data: livePromos } = await supabase.from('promotions').select('*').eq('store_id', user.id);
+          if (livePromos) setPromoItems(livePromos);
+        }
+      } catch (err) { console.log(err); }
+    }
+    loadMerchantData();
+  }, []);
   // 📆 حالة الاشتراك: true تعني الشهر الأول المجاني (أرباح 100%)، و false تعني الشهر الثاني فما فوق (عمولة 5%)
   // وضعتها كـ State لتتمكن من تجربة الحالتين في العرض والتنقل بينهما
   const [isFirstMonth, setIsFirstMonth] = useState(true);
@@ -30,15 +51,29 @@ export default function MerchantDashboard() {
   const [newPromoPrice, setNewPromoPrice] = useState('');
 
   // إضافة عرض ترويجي سريع
-  const handleAddPromo = () => {
+  const handleAddPromo = async () => {
     if (!newPromoName || !newPromoPrice) {
-      Alert.alert('تنبيه', 'الرجاء إدخال اسم المنتج وسعر التخفيض');
+      Alert.alert('تنبيه', 'الرجاء إدخال اسم المنتج والسعر');
       return;
     }
-    Alert.alert('نجاح', `تم نشر عرض (${newPromoName}) في واجهة الزبائن الرئيسية بنجاح! 🔥`);
-    setPromoItems([...promoItems, { id: Math.random().toString(), name: newPromoName, originalPrice: 'السعر السابق', promoPrice: `${newPromoPrice} د.ج` }]);
-    setNewPromoName('');
-    setNewPromoPrice('');
+    try {
+      const { data, error } = await supabase
+        .from('promotions')
+        .insert([{
+          store_id: merchantId,
+          name: newPromoName,
+          original_price: 'السعر القديم',
+          promo_price: `${newPromoPrice} د.ج`
+        }])
+        .select();
+      if (error) throw error;
+      Alert.alert('نجاح', `تم نشر عرض ${newPromoName} في عين الصفراء 🔥`);
+      if (data) setPromoItems([...promoItems, data[0]]);
+      setNewPromoName('');
+      setNewPromoPrice('');
+    } catch (err) {
+      Alert.alert('خطأ', 'تعذر حفظ العرض في قاعدة البيانات');
+    }
   };
 
   return (
@@ -46,7 +81,7 @@ export default function MerchantDashboard() {
       {/* هيدر لوحة التحكم للتاجر */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>لوحة إدارة المتجر الاحترافية 🏪</Text>
-        <Text style={styles.storeName}>مخبزة ومواد غذائية الهناء (عين الصفراء)</Text>
+        <Text style={styles.storeName}>{displayStoreName}</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>

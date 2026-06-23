@@ -1,8 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabase';
 import { Tabs } from 'expo-router';
 import { Text, StyleSheet } from 'react-native';
 
 export default function TabsLayout() {
+  const [role, setRole] = useState(null);
+
+  useEffect(() => {
+    async function fetchUserRole() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const userRole = user.user_metadata?.role || 'client';
+          setRole(userRole);
+        } else {
+          setRole('client');
+        }
+      } catch (err) {
+        setRole('client');
+      }
+    }
+    fetchUserRole();
+  }, []);
   return (
     <Tabs
       screenOptions={{
@@ -29,7 +48,8 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="merchant"
-        options={{
+      options={{
+        href: role === 'merchant' ? undefined : null,
           title: 'التاجر',
           tabBarLabel: ({ color }) => <Text style={[styles.labelText, { color }]}>متجري</Text>,
           tabBarIcon: () => <Text style={styles.iconText}>🏪</Text>,

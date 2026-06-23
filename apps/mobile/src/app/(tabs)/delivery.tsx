@@ -1,9 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabase';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 
 export default function DeliveryDashboard() {
   // محاكاة لعدد التوصيلات الحالية للموزع
-  const [deliveryCounter, setDeliveryCounter] = useState(48); 
+  const [deliveryCounter, setDeliveryCounter] = useState(0);
+  const [driverId, setDriverId] = useState(null);
+
+  useEffect(() => {
+    async function loadDriverData() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setDriverId(user.id);
+          const { data: driverData } = await supabase.from('drivers').select('delivery_counter, is_suspended').eq('id', user.id).single();
+          if (driverData) {
+            setDeliveryCounter(driverData.delivery_counter || 0);
+            setIsSuspended(driverData.is_suspended || false);
+          }
+        }
+      } catch (err) { console.log(err); }
+    }
+    loadDriverData();
+  }, []); 
   const [isSuspended, setIsSuspended] = useState(false);
 
   // إعدادات النظام المالي الثابتة
@@ -19,17 +38,28 @@ export default function DeliveryDashboard() {
   // حساب بريدي موب الرسمي والخاص بصاحب الموقع لمدينة عين الصفراء
   const BARIDIMOB_RIP = "00799999000524201107"; 
 
-  const handleAcceptDelivery = (id: string) => {
-    // التحقق أولاً إذا كان الحساب قد وصل لـ 50 توصيلة وجب حظره
+  const handleAcceptDelivery = async (id: string) => {
     if (deliveryCounter >= 50) {
-      Alert.alert("عذراً!", "تم تعطيل حسابك مؤقتاً لوصولك إلى الحد الأقصى (50 توصيلة). يرجى الدفع عبر بريدي موب لتفعيل الحساب.");
+      Alert.alert("تنبيه", "لقد تم توقيف الحساب مؤقتاً لتجاوز الحد المسموح (50 جولة). يرجى تسوية المستحقات.");
       return;
     }
+    try {
+      const nextCount = deliveryCounter + 1;
+      const willSuspend = nextCount >= 50;
+      
+      const { error } = await supabase.from('drivers').update({
+        delivery_counter: nextCount,
+        is_suspended: willSuspend
+      }).eq('id', driverId);
 
-    // إذا كان الحساب نشطاً، يتم قبول الطلب وزيادة العداد
-    Alert.alert('تم قبول الشحنة', `توجه إلى المحل لاستلام الطلب.`);
-    const nextCount = deliveryCounter + 1;
-    setDeliveryCounter(nextCount);
+      if (error) throw error;
+
+      Alert.alert('قبول الطلب', 'تم قبول الشحنة بنجاح! توجه لاستلامها الآن.');
+      setDeliveryCounter(nextCount);
+      if (willSuspend) setIsSuspended(true);
+    } catch (err) {
+      Alert.alert('خطأ', 'تعذر تحديث بيانات التوصيل الحية.');
+    }
   };
 
   return (

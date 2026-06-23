@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabase';
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -12,7 +13,7 @@ const categories = [
   { id: '4', title: 'خضار وفواكه', icon: '🥦' },
 ];
 
-const stores = [
+const mockStores = [
   { id: '1', name: 'متجر الهناء للمواد الغذائية', rating: '4.8', status: 'مفتوح', zone: 'حي الضلعة' },
   { id: '2', name: 'مطعم ومشاوي القصر', rating: '4.9', status: 'مفتوح', zone: 'قصر البلاد' },
   { id: '3', name: 'صيدلية الشفاء المركزية', rating: '4.7', status: 'مغلق', zone: 'وسط المدينة' },
@@ -20,6 +21,23 @@ const stores = [
 
 export default function Home() {
   const router = useRouter();
+  const [stores, setStores] = useState(mockStores);
+
+  useEffect(() => {
+    async function fetchLiveStores() {
+      try {
+        const { data, error } = await supabase
+          .from('stores')
+          .select('*');
+        if (data && !error) {
+          setStores(data);
+        }
+      } catch (err) {
+        console.log("Error fetching stores:", err);
+      }
+    }
+    fetchLiveStores();
+  }, []);
 
   return (
     <View style={styles.container}>

@@ -18,6 +18,26 @@ interface Driver {
 }
 
 export default function AdminDashboard() {
+  const [suspendedDrivers, setSuspendedDrivers] = useState([]);
+  const [pendingStores, setPendingStores] = useState([]);
+
+  useEffect(() => {
+    async function loadAdminData() {
+      const { data: drv } = await supabase.from('drivers').select('*').eq('is_suspended', true);
+      if (drv) setSuspendedDrivers(drv);
+      const { data: str } = await supabase.from('stores').select('*');
+      if (str) setPendingStores(str);
+    }
+    loadAdminData();
+  }, []);
+
+  const handleActivateDriver = async (driverId) => {
+    const { error } = await supabase.from('drivers').update({ is_suspended: false }).eq('id', driverId);
+    if (!error) {
+      alert('تم تفعيل المندوب بنجاح في عين الصفراء! 🎉');
+      setSuspendedDrivers(suspendedDrivers.filter(d => d.id !== driverId));
+    }
+  };
   const [stores, setStores] = useState<Store[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);

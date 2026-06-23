@@ -76,9 +76,14 @@ export default function RegisterScreen() {
     try {
       // 1. إنشاء الحساب في عميل الأمان السحابي Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        phone: phone,
-        password: password,
-      });
+          phone: phone,
+          password: password,
+          options: {
+            data: {
+              role: userType === 'customer' ? 'client' : userType
+            }
+          }
+        });
 
       if (authError) throw authError;
 
@@ -89,7 +94,8 @@ export default function RegisterScreen() {
       else if (userType === 'merchant') {
         const { error: storeError } = await supabase.from('stores').insert([
           { 
-            name: storeName, 
+            id: authData.user?.id,
+    name: storeName, 
             category: 'سوبر ماركت', 
             zone: selectedZone, // الحي الميداني المختار من القائمة
             is_first_month: true 
@@ -101,7 +107,8 @@ export default function RegisterScreen() {
       else if (userType === 'driver') {
         const { error: driverError } = await supabase.from('drivers').insert([
           { 
-            name: driverName, 
+            id: authData.user?.id,
+    name: driverName, 
             vehicle_type: vehicleType,
             delivery_counter: 0,
             is_suspended: true, // الحظر الافتراضي لسلامة ورقابة المنصة
