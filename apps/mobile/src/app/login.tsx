@@ -47,24 +47,25 @@ export default function LoginScreen() {
         return;
       }
 
-      // 🔍 فحص رتبة وحالة الحساب من الجداول السحابية للتأكد من موافقتك اليدوية
+      // 🔍 فحص رتبة وحالة الحساب من الجداول السحابية بالتوافق مع إعدادات الأمان
       // 1. فحص هل هو موصل؟
       const { data: driverData } = await supabase.from('drivers').select('is_suspended, name').eq('id', userId).single();
       if (driverData) {
         if (driverData.is_suspended) {
-          Alert.alert('حساب معلق ⏳', `مرحباً يا ${driverData.name}. حساب الموزع الخاص بك قيد المراجعة حالياً، سيتصل بك الإدارة لتفعيل حسابك ميدانياً.`);
-          await supabase.auth.signOut(); // طرده أمنياً حتى توافق عليه أنت
+          Alert.alert('حساب معلق ⏳', `مرحباً يا ${driverData.name}. حساب الموزع الخاص بك قيد المراجعة حالياً، ستتصل بك الإدارة لتفعيل حسابك ميدانياً.`);
+          await supabase.auth.signOut(); // طرده أمنياً حتى توافق عليه الإدارة
           return;
         }
         router.push('/delivery'); // دخول لوحة الموصل النشط
         return;
       }
 
-      // 2. فحص هل هو تاجر؟
-      const { data: storeData } = await supabase.from('stores').select('zone, name').eq('id', userId).single();
+      // 2. فحص هل هو تاجر؟ (تم تصحيح وتأمين منطق الفحص هنا ليتوافق مع آلية الاعتماد الإداري الجديد)
+      const { data: storeData } = await supabase.from('stores').select('id, name, is_approved').eq('id', userId).single();
       if (storeData) {
-        if (storeData.zone === 'قيد المراجعة') {
-          Alert.alert('مراجعة إدارية 🏪', `محل (${storeData.name}) مسجل لدينا. يرجى انتظار تفعيل الحساب من طرف المدير العام للبدء في استقبال الطلبات.`);
+        // فحص حالة الاعتماد (إذا لم يكن معتمداً بعد من طرفك يطرد أمنياً لمنع الاختراق)
+        if (storeData.is_approved === false || storeData.is_approved === null) {
+          Alert.alert('مراجعة إدارية 🏪', `محل (${storeData.name}) مسجل لدينا بنجاح. يرجى انتظار تفعيل الحساب وتدقيقه من طرف المدير العام للبدء في استقبال الطلبات.`);
           await supabase.auth.signOut();
           return;
         }
@@ -151,3 +152,4 @@ const styles = StyleSheet.create({
   footerText: { fontSize: 12, color: '#4A5568', fontFamily: 'Tajawal' },
   registerLink: { fontSize: 12, color: '#F26522', fontWeight: 'bold', fontFamily: 'Cairo', textDecorationLine: 'underline' }
 });
+        
