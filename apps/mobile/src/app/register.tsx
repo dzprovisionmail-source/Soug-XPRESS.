@@ -36,6 +36,20 @@ const AIN_SEFRA_NEIGHBORHOODS = [
   'طريق المدرسة القرانية'
 ];
 
+// مصفوفة التصنيفات التجارية المحدثة والدقيقة لمنصة سوق إكسبريس
+const STORE_CATEGORIES = [
+  'مواد غذائية (سوبر ماركت، بقالة، مواد استهلاكية)',
+  'خضر وفواكه',
+  'صيدلية (Pharmacie)',
+  'كوسميتيك (Cosmétiques)',
+  'ملابس جاهزة',
+  'بيع أواني ومستلزمات المنزل',
+  'مطعم / أكلات سريعة',
+  'جزارة',
+  'مخبزة وحلويات',
+  'بيع من المنزل'
+];
+
 export default function RegisterScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -53,9 +67,12 @@ export default function RegisterScreen() {
   const [customerName, setCustomerName] = useState('');
   const [customerAddressDetails, setCustomerAddressDetails] = useState('');
 
-  // حقول التاجر
-  const [storeName, setStoreName] = useState('');
+  // حقول التاجر المحدثة والمطابقة للترتيب الجديد
   const [merchantName, setMerchantName] = useState('');
+  const [storeName, setStoreName] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('مواد غذائية (سوبر ماركت، بقالة، مواد استهلاكية)');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [homeProductType, setHomeProductType] = useState('');
 
   // حقول الموصل
   const [driverName, setDriverName] = useState('');
@@ -87,17 +104,22 @@ export default function RegisterScreen() {
 
       if (authError) throw authError;
 
-      // 2. توزيع البيانات بدقة على الجداول مع إدراج الحي المختار
+      // 2. توزيع البيانات بدقة على الجداول مع معالجة حقل التصنيف الشرطي
       if (userType === 'customer') {
         Alert.alert('تم التسجيل بنجاح 🎉', `مرحباً بك يا ${customerName}، حسابك كزبون نشط الآن في حي (${selectedZone})!`);
       } 
       else if (userType === 'merchant') {
+        // حماية السلسلة النصية ودمج تفاصيل الإنتاج المنزلي بنظافة هندسية
+        const finalCategory = selectedCategory === 'بيع من المنزل' 
+          ? `بيع من المنزل (${homeProductType.trim() || 'حرفي'})` 
+          : selectedCategory;
+
         const { error: storeError } = await supabase.from('stores').insert([
           { 
             id: authData.user?.id,
-    name: storeName, 
-            category: 'سوبر ماركت', 
-            zone: selectedZone, // الحي الميداني المختار من القائمة
+            name: storeName, 
+            category: finalCategory, 
+            zone: selectedZone, 
             is_first_month: true 
           }
         ]);
@@ -108,10 +130,10 @@ export default function RegisterScreen() {
         const { error: driverError } = await supabase.from('drivers').insert([
           { 
             id: authData.user?.id,
-    name: driverName, 
+            name: driverName, 
             vehicle_type: vehicleType,
             delivery_counter: 0,
-            is_suspended: true, // الحظر الافتراضي لسلامة ورقابة المنصة
+            is_suspended: true, 
             total_owed_to_site: 0
           }
         ]);
@@ -134,19 +156,23 @@ export default function RegisterScreen() {
 
       {/* أزرار التبديل لفرز نوع الحساب والبيانات تلقائياً */}
       <View style={styles.typeSelectorRow}>
-        <TouchableOpacity style={[styles.typeBtn, userType === 'driver' && styles.activeTypeBtn]} onPress={() => { setUserType('driver'); setShowZoneDropdown(false); }}>
+        <TouchableOpacity style={[styles.typeBtn, userType === 'driver' && styles.activeTypeBtn]} onPress={() => { setUserType('driver'); setShowZoneDropdown(false); setShowCategoryDropdown(false); }}>
           <Text style={[styles.typeBtnText, userType === 'driver' && styles.activeTypeBtnText]}>موصل 🛵</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.typeBtn, userType === 'merchant' && styles.activeTypeBtn]} onPress={() => { setUserType('merchant'); setShowZoneDropdown(false); }}>
+        <TouchableOpacity style={[styles.typeBtn, userType === 'merchant' && styles.activeTypeBtn]} onPress={() => { setUserType('merchant'); setShowZoneDropdown(false); setShowCategoryDropdown(false); }}>
           <Text style={[styles.typeBtnText, userType === 'merchant' && styles.activeTypeBtnText]}>تاجر 🛒</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.typeBtn, userType === 'customer' && styles.activeTypeBtn]} onPress={() => { setUserType('customer'); setShowZoneDropdown(false); }}>
+        <TouchableOpacity style={[styles.typeBtn, userType === 'customer' && styles.activeTypeBtn]} onPress={() => { setUserType('customer'); setShowZoneDropdown(false); setShowCategoryDropdown(false); }}>
           <Text style={[styles.typeBtnText, userType === 'customer' && styles.activeTypeBtnText]}>زبون 👤</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.formCard}>
         
+        {/* 1️⃣ حقل رقم الهاتف الموحد والضروري يظهر دائماً في القمة لكل الفئات */}
+        <Text style={styles.inputLabel}>رقم الهاتف الشخصي (اسم المستخدم للدخول):</Text>
+        <TextInput style={styles.input} placeholder="06xxxxxxxx أو 05xxxxxxxx" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+
         {/* واجهة الزبون */}
         {userType === 'customer' && (
           <View>
@@ -159,7 +185,6 @@ export default function RegisterScreen() {
               <Text style={{ color: '#F26522' }}>▼</Text>
             </TouchableOpacity>
 
-            {/* القائمة المنسدلة الذكية المرتبة ومحقونة بعناوينك */}
             {showZoneDropdown && (
               <View style={styles.dropdownContainer}>
                 <ScrollView nestedScrollEnabled={true}>
@@ -177,17 +202,59 @@ export default function RegisterScreen() {
           </View>
         )}
 
-        {/* واجهة التاجر */}
+        {/* 2️⃣ واجهة التاجر المحدثة والمنظمة هندسياً وبصرياً بدقة عالية */}
         {userType === 'merchant' && (
           <View>
-            <Text style={styles.inputLabel}>اسم المحل التجاري (يظهر في التطبيق):</Text>
+            {/* أ. اسم صاحب الحساب */}
+            <Text style={styles.inputLabel}>اسم التاجر:</Text>
+            <TextInput style={styles.input} placeholder="الاسم واللقب الحقيقي للتواصل الإداري" value={merchantName} onChangeText={setMerchantName} />
+
+            {/* ب. اسم النشاط التجاري */}
+            <Text style={styles.inputLabel}>الاسم التجاري للمحل أو التجارة:</Text>
             <TextInput style={styles.input} placeholder="مثال: سوبرماركت الفتح، صيدلية الشفاء..." value={storeName} onChangeText={setStoreName} />
             
-            <Text style={styles.inputLabel}>اسم صاحب المحل أو المسؤول:</Text>
-            <TextInput style={styles.input} placeholder="الاسم واللقب الحقيقي للتواصل الإداري" value={merchantName} onChangeText={setMerchantName} />
-            
+            {/* جـ. القائمة المنسدلة للتصنيفات التجارية المحدثة */}
+            <Text style={styles.inputLabel}>تصنيف النشاط التجاري:</Text>
+            <TouchableOpacity 
+              style={styles.dropdownSelector} 
+              onPress={() => { 
+                setShowCategoryDropdown(!showCategoryDropdown); 
+                setShowZoneDropdown(false); // تأمين الحماية البرمجية لمنع التداخل مع قائمة الأحياء
+              }}
+            >
+              <Text style={styles.dropdownSelectorText}>{selectedCategory}</Text>
+              <Text style={{ color: '#F26522' }}>▼</Text>
+            </TouchableOpacity>
+
+            {showCategoryDropdown && (
+              <View style={styles.dropdownContainer}>
+                <ScrollView nestedScrollEnabled={true}>
+                  {STORE_CATEGORIES.map((cat) => (
+                    <TouchableOpacity key={cat} style={styles.dropdownItem} onPress={() => { setSelectedCategory(cat); setShowCategoryDropdown(false); }}>
+                      <Text style={styles.dropdownItemText}>{cat}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* د. الحقل المشروط لـ "بيع من المنزل" - يظهر ويختفي ديناميكياً وسلس مية بالمية */}
+            {selectedCategory === 'بيع من المنزل' && (
+              <View>
+                <Text style={styles.inputLabel}>نوع المنتج المصنوع في المنزل:</Text>
+                <TextInput style={styles.input} placeholder="مثال: خياطة وطرز، حلويات تقليدية، وجبات منزلية..." value={homeProductType} onChangeText={setHomeProductType} />
+              </View>
+            )}
+
+            {/* هـ. القائمة المنسدلة للأحياء التجارية */}
             <Text style={styles.inputLabel}>موقع المحل (اختر الحي التجاري):</Text>
-            <TouchableOpacity style={styles.dropdownSelector} onPress={() => setShowZoneDropdown(!showZoneDropdown)}>
+            <TouchableOpacity 
+              style={styles.dropdownSelector} 
+              onPress={() => { 
+                setShowZoneDropdown(!showZoneDropdown); 
+                setShowCategoryDropdown(false); // تأمين الحماية البرمجية لمنع التداخل مع قائمة التصنيفات
+              }}
+            >
               <Text style={styles.dropdownSelectorText}>{selectedZone}</Text>
               <Text style={{ color: '#F26522' }}>▼</Text>
             </TouchableOpacity>
@@ -224,10 +291,7 @@ export default function RegisterScreen() {
           </View>
         )}
 
-        {/* حقول الأمان الموحدة لجميع فئات المستخدمين */}
-        <Text style={styles.inputLabel}>رقم الهاتف الشخصي (اسم المستخدم للدخول):</Text>
-        <TextInput style={styles.input} placeholder="06xxxxxxxx أو 05xxxxxxxx" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
-
+        {/* 3️⃣ حقل كلمة المرور الموحد يغلق دائماً الجزء السفلي للاستمارة */}
         <Text style={styles.inputLabel}>كلمة المرور السرية الخاصة بالحساب:</Text>
         <TextInput style={styles.input} placeholder="اكتب رمزاً سرياً قوياً ومحفوظاً" secureTextEntry={true} value={password} onChangeText={setPassword} />
 
@@ -252,7 +316,6 @@ const styles = StyleSheet.create({
   inputLabel: { fontSize: 12, fontWeight: 'bold', color: '#4A5568', textAlign: 'right', marginBottom: 6, fontFamily: 'Cairo', marginTop: 12 },
   input: { borderWidth: 1, borderColor: '#CBD5E0', borderRadius: 8, padding: 12, textAlign: 'right', fontSize: 14, fontFamily: 'Tajawal', backgroundColor: '#F8FAFC', marginBottom: 10 },
   
-  // ستايل القائمة المنسدلة الاحترافية المتوافقة مع الموبايل
   dropdownSelector: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#CBD5E0', borderRadius: 8, padding: 12, backgroundColor: '#F8FAFC', marginBottom: 12 },
   dropdownSelectorText: { fontSize: 14, fontFamily: 'Tajawal', color: '#4A5568' },
   dropdownContainer: { borderWidth: 1, borderColor: '#CBD5E0', borderRadius: 8, backgroundColor: '#FFFFFF', maxHeight: 220, overflow: 'hidden', marginBottom: 15, padding: 5 },
