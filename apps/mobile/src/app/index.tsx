@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, Dimensions, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, Dimensions, ActivityIndicator, TouchableOpacity, RefreshControl, Modal, TextInput, Alert } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useRouter } from 'expo-router';
 import { supabase } from './supabase';
 
 const { width } = Dimensions.get('window');
 
-// 1. بيانات الشاشات الترحيبية (Onboarding Slides)
+// 1. بيانات الشاشات الترحيبية (Onboarding Slides) - محفوظة بالكامل لحسابك
 const slides = [
   {
     id: '1',
@@ -52,6 +52,13 @@ export default function RootEntryScreen() {
   const [refreshing, refreshingSet] = useState(false);
   const [feedData, setFeedData] = useState<MediaPost[]>([]);
 
+  // الحقول الجديدة الخاصة بمحرك الردود والتعليقات الحية للمنصة
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [isSending, setIsSending] = useState(false);
+
   useEffect(() => {
     fetchCommercialFeed();
   }, []);
@@ -80,12 +87,80 @@ export default function RootEntryScreen() {
     }
   };
 
+  // فتح نافذة التعليقات وجلب ردود الزبائن والفرسان المرتبطة بالمنشور
+  const openComments = async (postId: string) => {
+    setSelectedPostId(postId); 
+    setModalVisible(true);
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      setComments(data || []);
+    } catch (error) {
+      console.log('خطأ في جلب التعليقات:', error);
+    }
+  };
+
+  // معالجة الفرز والإرسال الذكي حسب الرتب المعتمدة في جدار حماية Supabase
+  const submitComment = async () => {
+    if (!newComment.trim() || !selectedPostId) return;
+    setIsSending(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      let finalUsername = 'زبون سوق';
+      let finalRole = 'customer';
+      let userId = null;
+
+      if (user) {
+        userId = user.id;
+        // الفحص البرمجي: هل المعلق مسجل كـ موصل رسمي؟
+        const { data: driverData } = await supabase.from('drivers').select('name').eq('id', user.id).single();
+        
+        if (driverData) {
+          finalUsername = driverData.name;
+          finalRole = 'driver'; // رتبة موصل
+        } else {
+          // مستخدم عادي مسجل
+          finalUsername = user.phone ? `زبون (${user.phone})` : (user.email?.split('@')[0] || 'مستخدم مسجل');
+          finalRole = 'customer'; // رتبة زبون
+        }
+      }
+
+      // إدراج التعليق المحمي بقوانين الـ RLS التي فعلناها للتو
+      const { error } = await supabase.from('comments').insert([
+        { 
+          post_id: selectedPostId, 
+          user_id: userId,
+          content: newComment.trim(), 
+          username: finalUsername,
+          user_role: finalRole 
+        }
+      ]);
+
+      if (error) throw error;
+
+      setNewComment(''); 
+      // تحديث فوري للقائمة حياً أمام عين المستخدم
+      const { data: updatedComments } = await supabase.from('comments').select('*').eq('post_id', selectedPostId).order('created_at', { ascending: true });
+      setComments(updatedComments || []);
+
+    } catch (error: any) {
+      Alert.alert('خطأ في إرسال التعليق', error.message);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   // معالجة التنقل في شاشات الترحيب
   const handleNextSlide = () => {
     if (currentSlideIndex < slides.length - 1) {
       setCurrentSlideIndex(currentSlideIndex + 1);
     } else {
-      // الانتقال الذكي للتغذية التجارية كضيف بدلاً من الخروج من الشاشة
       setShowOnboarding(false);
     }
   };
@@ -192,6 +267,11 @@ export default function RootEntryScreen() {
               <View style={styles.descriptionContainer}>
                 <Text style={styles.descriptionText}>{item.description}</Text>
               </View>
+
+              {/* الزر المضاف حديثاً لربط وفتح التعليقات الحية */}
+              <TouchableOpacity onPress={() => openComments(item.id)} style={styles.commentBtn}>
+                <Text style={styles.commentBtnText}>💬 تعليقات العرض والتفاعل</Text>
+              </TouchableOpacity>
             </View>
           );
         }}
@@ -204,6 +284,43 @@ export default function RootEntryScreen() {
           </View>
         }
       />
+
+      {/* نافذة التعليقات العامة المحدثة بالشارات الملونة للفرسان والزبائن */}
+      <Modal visible={modalVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>التعليقات الحية للمنصة</Text>
+            
+            <FlatList 
+              data={comments} 
+              keyExtractor={(item) => item.id} 
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <View style={styles.commentItemRow}>
+                  <View style={styles.commentBody}>
+                    <View style={styles.commentHeader}>
+                      <Text style={[styles.roleBadge, item.user_role === 'driver' ? styles.driverBadge : styles.customerBadge]}>
+                        {item.user_role === 'driver' ? '🛵 موصل' : '🛒 زبون'}
+                      </Text>
+                      <Text style={styles.commenterName}>{item.username}</Text>
+                    </View>
+                    <Text style={styles.commentContentText}>{item.content}</Text>
+                  </View>
+                </View>
+              )} 
+            />
+
+            {/* حقل إدخال التعليقات الفوري */}
+            <View style={styles.inputRow}>
+              <TextInput style={styles.commentInput} placeholder="اكتب تعليقك أو استفسارك..." value={newComment} onChangeText={setNewComment} />
+              <TouchableOpacity onPress={submitComment} style={[styles.sendBtn, !newComment.trim() && styles.disabledBtn]} disabled={isSending || !newComment.trim()}>
+                {isSending ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={{color:'#FFF', fontWeight:'bold', fontFamily:'Tajawal', fontSize:12}}>إرسال</Text>}
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity onPress={() => setModalVisible(false)} style={{marginTop:15}}><Text style={{textAlign:'center', color:'#718096', fontFamily:'Tajawal'}}>إغلاق النافذة ❌</Text></TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -247,5 +364,24 @@ const styles = StyleSheet.create({
   descriptionContainer: { padding: 12, backgroundColor: '#FFFFFF' },
   descriptionText: { fontSize: 12, color: '#2D3748', fontFamily: 'Tajawal', textAlign: 'right', lineHeight: 18 },
   emptyContainer: { alignItems: 'center', marginTop: 60 },
-  emptyText: { fontSize: 13, color: '#4A5568', fontFamily: 'Cairo' }
+  emptyText: { fontSize: 13, color: '#4A5568', fontFamily: 'Cairo' },
+
+  // الستايلات المضافة لزر التعليقات والـ Modal المفروز
+  commentBtn: { backgroundColor: '#F8FAFC', padding: 12, alignItems: 'center', borderTopWidth: 1, borderColor: '#E2E8F0' },
+  commentBtnText: { color: '#4A5568', fontSize: 12, fontWeight: 'bold', fontFamily: 'Tajawal' },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalContent: { backgroundColor: '#FFF', height: '58%', padding: 20, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
+  modalTitle: { fontSize: 15, fontWeight: 'bold', textAlign: 'center', marginBottom: 15, color: '#1B2A6B', fontFamily: 'Cairo' },
+  commentItemRow: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EDF2F7', flexDirection: 'row-reverse' },
+  commentBody: { flex: 1, alignItems: 'flex-end' },
+  commentHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
+  commenterName: { fontSize: 12, fontWeight: 'bold', color: '#2D3748', marginRight: 6, fontFamily: 'Tajawal' },
+  commentContentText: { fontSize: 13, color: '#4A5568', textAlign: 'right', fontFamily: 'Tajawal' },
+  roleBadge: { fontSize: 9, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5, overflow: 'hidden', fontWeight: 'bold', fontFamily: 'Tajawal' },
+  customerBadge: { backgroundColor: '#EBF8FF', color: '#2B6CB0' }, // أزرق للزبون
+  driverBadge: { backgroundColor: '#FEFCBF', color: '#744210' },   // ذهبي للموصل
+  inputRow: { flexDirection: 'row', marginTop: 15, alignItems: 'center' },
+  commentInput: { flex: 1, borderWidth: 1, borderColor: '#CBD5E0', borderRadius: 8, padding: 10, textAlign: 'right', backgroundColor: '#F8FAFC', fontFamily: 'Tajawal' },
+  sendBtn: { backgroundColor: '#F26522', paddingVertical: 12, paddingHorizontal: 18, borderRadius: 8, marginLeft: 5 },
+  disabledBtn: { backgroundColor: '#CBD5E0' }
 });
