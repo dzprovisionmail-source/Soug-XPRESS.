@@ -1,169 +1,103 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { useRouter, Link } from 'expo-router';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { supabase } from './supabase';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  
-  // حقول الدخول
-  const [phoneOrEmail, setPhoneOrEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [isAdminMode, setIsAdminMode] = useState(false); // التبديل بين دخول الإدارة والمستخدمين
 
   const handleLogin = async () => {
-    if (!phoneOrEmail || !password) {
-      Alert.alert('تنبيه', 'الرجاء إدخال بيانات الاعتماد أولاً');
+    if (!phone || !password) {
+      Alert.alert('تنبيه', 'الرجاء إدخال رقم الهاتف وكلمة المرور أولاً');
       return;
+    }
+
+    // 🌟 تحويل رقم الهاتف تلقائياً وصارماً إلى الصيغة الدولية E.164 المطابقة لقاعدة البيانات
+    let formattedPhone = phone.trim().replace(/\s+/g, '');
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '+213' + formattedPhone.substring(1);
+    } else if (!formattedPhone.startsWith('+')) {
+      formattedPhone = '+213' + formattedPhone;
     }
 
     setLoading(true);
     try {
-      let authResult;
+      // تسجيل الدخول باستخدام المعرّف الدولي المهيأ
+      const { data, error } = await supabase.auth.signInWithPassword({
+        phone: formattedPhone,
+        password: password,
+      });
 
-      if (isAdminMode) {
-        // 👑 دخول المدير العام الآمن عبر الإيميل المشفر
-        authResult = await supabase.auth.signInWithPassword({
-          email: phoneOrEmail,
-          password: password,
-        });
-      } else {
-        // 👤 دخول الزبائن، التجار، والفرسان عبر رقم الهاتف
-        authResult = await supabase.auth.signInWithPassword({
-          phone: phoneOrEmail,
-          password: password,
-        });
-      }
+      if (error) throw error;
 
-      if (authResult.error) throw authResult.error;
-
-      const userId = authResult.data.user?.id;
-
-      // إذا كان الدخول للمدير، نوجهه فوراً للوحة التحكم الإدارية
-      if (isAdminMode) {
-        Alert.alert('مرحباً بالقائد 👑', 'تم التحقق من الهوية الرقمية للمدير العام بنجاح.');
-        router.push('/admin');
-        return;
-      }
-
-      // 🔍 فحص رتبة وحالة الحساب بأمان باستخدام .maybeSingle() لمنع انهيار الفحص
-      
-      // 1. فحص هل هو موصل؟
-      const { data: driverData, error: driverError } = await supabase
-        .from('drivers')
-        .select('is_suspended, name')
-        .eq('id', userId)
-        .maybeSingle(); // استخدام maybeSingle لمنع توقف الكود إذا لم يكن موصلاً
-
-      if (driverError) throw driverError;
-
-      if (driverData) {
-        if (driverData.is_suspended) {
-          Alert.alert('حساب معلق ⏳', `مرحباً يا ${driverData.name}. حساب الموزع الخاص بك قيد المراجعة حالياً، ستتصل بك الإدارة لتفعيل حسابك ميدانياً.`);
-          await supabase.auth.signOut(); // طرده أمنياً حتى توافق عليه الإدارة
-          return;
-        }
-        router.push('/delivery'); // دخول لوحة الموصل النشط المحدثة
-        return;
-      }
-
-      // 2. فحص هل هو تاجر؟
-      const { data: storeData, error: storeError } = await supabase
-        .from('stores')
-        .select('id, name, is_approved')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (storeError) throw storeError;
-
-      if (storeData) {
-        // فحص حالة الاعتماد الإداري للتجار
-        if (storeData.is_approved === false || storeData.is_approved === null) {
-          Alert.alert('مراجعة إدارية 🏪', `محل (${storeData.name}) مسجل لدينا بنجاح. يرجى انتظار تفعيل الحساب وتدقيقه من طرف المدير العام للبدء في استقبال الطلبات.`);
-          await supabase.auth.signOut();
-          return;
-        }
-        router.push('/merchant'); // دخول لوحة التاجر المعتمد والمحدثة بالتعليقات
-        return;
-      }
-
-      // 3. إذا لم يكن موصلاً أو تاجراً فهو زبون عادي يوجه للشاشة الرئيسية فوراً
+      // عند النجاح، يتم توجيهه مباشرة للوحة الرئيسية للتطبيق
+      Alert.alert('مرحباً بك مجدداً 🎉', 'تم تسجيل الدخول بنجاح آمن!');
       router.push('/');
-
+      
     } catch (error: any) {
-      Alert.alert('فشل تسجيل الدخول', error.message || 'تأكد من صحة البيانات المسجلة وحاول مجدداً.');
+      Alert.alert('فشل تسجيل الدخول', 'بيانات الدخول غير صحيحة، يرجى التأكد من الرقم والرمز السري.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.logoText}>سوق إكسبريس ⚡</Text>
+    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <Text style={styles.title}>سوق إكسبريس ⚡</Text>
       <Text style={styles.subtitle}>بوابتك الآمنة للتسوق والتوصيل في عين الصفراء</Text>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>
-          {isAdminMode ? '👑 تسجيل دخول الإدارة العامة' : '🔐 تسجيل دخول المستخدمين'}
-        </Text>
+      <View style={styles.formCard}>
+        <Text style={styles.cardHeader}>🔐 تسجيل دخول المستخدمين</Text>
 
-        <Text style={styles.inputLabel}>
-          {isAdminMode ? 'البريد الإلكتروني الإداري:' : 'رقم هاتف الحساب:'}
-        </Text>
+        <Text style={styles.inputLabel}>رقم هاتف الحساب:</Text>
         <TextInput 
           style={styles.input} 
-          placeholder={isAdminMode ? 'admin@sougxpress.com' : '06xxxxxxxx / 05xxxxxxxx'} 
-          keyboardType={isAdminMode ? 'email-address' : 'phone-pad'}
-          autoCapitalize="none"
-          value={phoneOrEmail} 
-          onChangeText={setPhoneOrEmail} 
+          placeholder="06xxxxxxxx أو 05xxxxxxxx" 
+          keyboardType="phone-pad" 
+          value={phone} 
+          onChangeText={setPhone} 
         />
 
         <Text style={styles.inputLabel}>كلمة المرور السرية:</Text>
         <TextInput 
           style={styles.input} 
-          placeholder="••••••••••••" 
+          placeholder="إدخال رمز المرور الخاص بك" 
           secureTextEntry={true} 
           value={password} 
           onChangeText={setPassword} 
         />
 
-        <TouchableOpacity style={styles.primaryBtn} onPress={handleLogin} disabled={loading}>
-          {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.btnText}>تسجيل الدخول الآمن 🚀</Text>}
+        <TouchableOpacity style={styles.submitBtn} onPress={handleLogin} disabled={loading}>
+          {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.submitBtnText}>🚀 تسجيل الدخول الآمن</Text>}
         </TouchableOpacity>
 
-        {/* التبديل بين وضع المدير والمستخدم العادي */}
-        <TouchableOpacity style={styles.toggleModeBtn} onPress={() => { setIsAdminMode(!isAdminMode); setPhoneOrEmail(''); }}>
-          <Text style={styles.toggleModeText}>
-            {isAdminMode ? '👤 الدخول كزبون / تاجر / موصل' : '🛠️ الدخول الخاص بطاقم الإدارة'}
-          </Text>
+        <TouchableOpacity style={styles.adminLinkBtn} onPress={() => Alert.alert('قسم الإدارة', 'هذا القسم مخصص لطاقم التطوير والمراجعة الإدارية فقط.')}>
+          <Text style={styles.adminLinkText}>🛠️ الدخول الخاص بطاقم الإدارة</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.footerRow}>
-        <Link href="/register" asChild>
-          <TouchableOpacity><Text style={styles.registerLink}>سجل حسابك الآن من هنا</Text></TouchableOpacity>
-        </Link>
-        <Text style={styles.footerText}>ليس لديك حساب بعد؟ </Text>
-      </View>
-    </View>
+      <TouchableOpacity style={styles.registerLinkBtn} onPress={() => router.push('/register')}>
+        <Text style={styles.registerLinkText}>سجل حسابك الآن من هنا؟</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFBFD', justifyContent: 'center', alignItems: 'center', padding: 20 },
-  logoText: { fontSize: 26, fontWeight: 'bold', color: '#111A44', fontFamily: 'Cairo' },
-  subtitle: { fontSize: 11, color: '#718096', fontFamily: 'Tajawal', marginTop: 4, marginBottom: 30, textAlign: 'center' },
-  card: { backgroundColor: '#FFFFFF', width: '100%', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
-  cardTitle: { fontSize: 15, fontWeight: 'bold', color: '#111A44', fontFamily: 'Cairo', marginBottom: 15, textAlign: 'center' },
-  inputLabel: { fontSize: 12, fontWeight: 'bold', color: '#4A5568', textAlign: 'right', marginBottom: 6, fontFamily: 'Cairo', marginTop: 10 },
+  container: { padding: 20, backgroundColor: '#FAFBFD', alignItems: 'center', paddingBottom: 40, justifyContent: 'center', flexGrow: 1 },
+  title: { fontSize: 26, fontWeight: 'bold', color: '#111A44', fontFamily: 'Cairo', marginTop: 10 },
+  subtitle: { fontSize: 12, color: '#718096', fontFamily: 'Tajawal', marginTop: 4, marginBottom: 30, textAlign: 'center' },
+  formCard: { backgroundColor: '#FFFFFF', width: '100%', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  cardHeader: { fontSize: 16, fontWeight: 'bold', color: '#111A44', fontFamily: 'Cairo', textAlign: 'center', marginBottom: 15 },
+  inputLabel: { fontSize: 13, fontWeight: 'bold', color: '#4A5568', textAlign: 'right', marginBottom: 6, fontFamily: 'Cairo', marginTop: 12 },
   input: { borderWidth: 1, borderColor: '#CBD5E0', borderRadius: 8, padding: 12, textAlign: 'right', fontSize: 14, fontFamily: 'Tajawal', backgroundColor: '#F8FAFC', marginBottom: 10 },
-  primaryBtn: { backgroundColor: '#F26522', paddingVertical: 14, borderRadius: 10, alignItems: 'center', marginTop: 15 },
-  btnText: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'Cairo' },
-  toggleModeBtn: { marginTop: 15, paddingVertical: 8, alignItems: 'center' },
-  toggleModeText: { color: '#111A44', fontSize: 11, fontWeight: 'bold', fontFamily: 'Tajawal', textDecorationLine: 'underline' },
-  footerRow: { flexDirection: 'row-reverse', marginTop: 25, alignItems: 'center' },
-  footerText: { fontSize: 12, color: '#4A5568', fontFamily: 'Tajawal' },
-  registerLink: { fontSize: 12, color: '#F26522', fontWeight: 'bold', fontFamily: 'Cairo', textDecorationLine: 'underline' }
+  submitBtn: { backgroundColor: '#F26522', paddingVertical: 14, borderRadius: 10, alignItems: 'center', marginTop: 20 },
+  submitBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'Cairo' },
+  adminLinkBtn: { marginTop: 15, alignItems: 'center' },
+  adminLinkText: { color: '#718096', fontSize: 12, fontFamily: 'Tajawal', textDecorationLine: 'underline' },
+  registerLinkBtn: { marginTop: 25 },
+  registerLinkText: { color: '#F26522', fontSize: 13, fontWeight: 'bold', fontFamily: 'Cairo', textDecorationLine: 'underline' }
 });
