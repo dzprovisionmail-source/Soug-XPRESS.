@@ -10,7 +10,7 @@ export default function LoginScreen() {
   // حقول الدخول
   const [phoneOrEmail, setPhoneOrEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isAdminMode, setIsAdminMode] = useState(false); // التبديل بين دخول الطاقم والزبائن
+  const [isAdminMode, setIsAdminMode] = useState(false); // التبديل بين دخول الإدارة والمستخدمين
 
   const handleLogin = async () => {
     if (!phoneOrEmail || !password) {
@@ -47,37 +47,52 @@ export default function LoginScreen() {
         return;
       }
 
-      // 🔍 فحص رتبة وحالة الحساب من الجداول السحابية بالتوافق مع إعدادات الأمان
+      // 🔍 فحص رتبة وحالة الحساب بأمان باستخدام .maybeSingle() لمنع انهيار الفحص
+      
       // 1. فحص هل هو موصل؟
-      const { data: driverData } = await supabase.from('drivers').select('is_suspended, name').eq('id', userId).single();
+      const { data: driverData, error: driverError } = await supabase
+        .from('drivers')
+        .select('is_suspended, name')
+        .eq('id', userId)
+        .maybeSingle(); // استخدام maybeSingle لمنع توقف الكود إذا لم يكن موصلاً
+
+      if (driverError) throw driverError;
+
       if (driverData) {
         if (driverData.is_suspended) {
           Alert.alert('حساب معلق ⏳', `مرحباً يا ${driverData.name}. حساب الموزع الخاص بك قيد المراجعة حالياً، ستتصل بك الإدارة لتفعيل حسابك ميدانياً.`);
           await supabase.auth.signOut(); // طرده أمنياً حتى توافق عليه الإدارة
           return;
         }
-        router.push('/delivery'); // دخول لوحة الموصل النشط
+        router.push('/delivery'); // دخول لوحة الموصل النشط المحدثة
         return;
       }
 
-      // 2. فحص هل هو تاجر؟ (تم تصحيح وتأمين منطق الفحص هنا ليتوافق مع آلية الاعتماد الإداري الجديد)
-      const { data: storeData } = await supabase.from('stores').select('id, name, is_approved').eq('id', userId).single();
+      // 2. فحص هل هو تاجر؟
+      const { data: storeData, error: storeError } = await supabase
+        .from('stores')
+        .select('id, name, is_approved')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (storeError) throw storeError;
+
       if (storeData) {
-        // فحص حالة الاعتماد (إذا لم يكن معتمداً بعد من طرفك يطرد أمنياً لمنع الاختراق)
+        // فحص حالة الاعتماد الإداري للتجار
         if (storeData.is_approved === false || storeData.is_approved === null) {
           Alert.alert('مراجعة إدارية 🏪', `محل (${storeData.name}) مسجل لدينا بنجاح. يرجى انتظار تفعيل الحساب وتدقيقه من طرف المدير العام للبدء في استقبال الطلبات.`);
           await supabase.auth.signOut();
           return;
         }
-        router.push('/merchant'); // دخول لوحة التاجر المعتمد
+        router.push('/merchant'); // دخول لوحة التاجر المعتمد والمحدثة بالتعليقات
         return;
       }
 
-      // 3. إذا لم يكن موصل أو تاجر فهو زبون عادي يوجه للشاشة الرئيسية فوراً
+      // 3. إذا لم يكن موصلاً أو تاجراً فهو زبون عادي يوجه للشاشة الرئيسية فوراً
       router.push('/');
 
     } catch (error: any) {
-      Alert.alert('فشل تسجيل الدخول', 'تأكد من صحة البيانات المسجلة وحاول مجدداً.');
+      Alert.alert('فشل تسجيل الدخول', error.message || 'تأكد من صحة البيانات المسجلة وحاول مجدداً.');
     } finally {
       setLoading(false);
     }
@@ -118,7 +133,7 @@ export default function LoginScreen() {
           {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.btnText}>تسجيل الدخول الآمن 🚀</Text>}
         </TouchableOpacity>
 
-        {/* زر سري ذكي للتبديل بين وضع المدير والمستخدم العادي */}
+        {/* التبديل بين وضع المدير والمستخدم العادي */}
         <TouchableOpacity style={styles.toggleModeBtn} onPress={() => { setIsAdminMode(!isAdminMode); setPhoneOrEmail(''); }}>
           <Text style={styles.toggleModeText}>
             {isAdminMode ? '👤 الدخول كزبون / تاجر / موصل' : '🛠️ الدخول الخاص بطاقم الإدارة'}
@@ -152,4 +167,3 @@ const styles = StyleSheet.create({
   footerText: { fontSize: 12, color: '#4A5568', fontFamily: 'Tajawal' },
   registerLink: { fontSize: 12, color: '#F26522', fontWeight: 'bold', fontFamily: 'Cairo', textDecorationLine: 'underline' }
 });
-        
