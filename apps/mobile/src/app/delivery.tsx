@@ -13,7 +13,7 @@ interface ActiveOrder {
 }
 
 export default function DeliveryDashboard() {
-  // معرف الموزع التجريبي (سيتم ربطه ديناميكياً بحساب الموزع الفعلي عند تسجيل الدخول لاحقاً)
+  // الحالات البرمجية الخاصة بالفارس والطلبيات
   const [driverId, setDriverId] = useState<string>('');
   const [driverName, setDriverName] = useState<string>('فارس التوصيل السريع');
   const [deliveryCounter, setDeliveryCounter] = useState<number>(0);
@@ -27,20 +27,38 @@ export default function DeliveryDashboard() {
     initializeDriver();
   }, []);
 
-  // جلب أول حساب موزع متاح في السيرفر لتشغيل اللوحة عليه تجريبياً
+  // جلب حساب الموزع الفعلي ديناميكياً عند تسجيل الدخول مع خيار تجريبي احتياطي
   const initializeDriver = async () => {
     setLoading(true);
     try {
-      const { data: drivers, error } = await supabase.from('drivers').select('*').limit(1);
-      if (error) throw error;
+      // 1. محاولة جلب المستخدم المسجل دخوله حالياً في التطبيق
+      const { data: { user } } = await supabase.auth.getUser();
+      let currentDriverId = user?.id;
 
-      if (drivers && drivers.length > 0) {
-        setDriverId(drivers[0].id);
-        setDriverName(drivers[0].name);
-        setDeliveryCounter(drivers[0].delivery_counter);
-        setIsSuspended(drivers[0].is_suspended);
-        setTotalOwed(drivers[0].total_owed_to_site);
-        fetchActiveOrder(drivers[0].id);
+      // 2. خيار احتياطي (Fallback) في حال عدم وجود جلسة نشطة أثناء الفحص التجريبي
+      if (!currentDriverId) {
+        const { data: drivers } = await supabase.from('drivers').select('*').limit(1);
+        if (drivers && drivers.length > 0) {
+          currentDriverId = drivers[0].id;
+        }
+      }
+
+      // 3. جلب البيانات الكاملة للفارس المحدد وتحديث شاشته
+      if (currentDriverId) {
+        const { data: driverData, error } = await supabase
+          .from('drivers')
+          .select('*')
+          .eq('id', currentDriverId)
+          .single();
+
+        if (error) throw error;
+
+        setDriverId(driverData.id);
+        setDriverName(driverData.name);
+        setDeliveryCounter(driverData.delivery_counter);
+        setIsSuspended(driverData.is_suspended);
+        setTotalOwed(driverData.total_owed_to_site);
+        fetchActiveOrder(driverData.id);
       }
     } catch (error: any) {
       console.log('Error initializing driver:', error.message);
@@ -107,7 +125,7 @@ export default function DeliveryDashboard() {
 
       if (driverError) throw driverError;
 
-      Alert.alert('ألف مبروك 🎉', 'تم إنهاء التوصيلة بنجاح وقبض 100 دج. قُمت بعمل رائع!');
+      Alert.alert('ألف مبروك 🎉', 'تم إنهاء التوصيلة بنجاح وقبض حق التوصيل. قُمت بعمل رائع يا بطل!');
       
       // إعادة تحديث البيانات من السيرفر لرؤية تأثير العداد أو الحظر الفوري
       initializeDriver();
@@ -122,7 +140,7 @@ export default function DeliveryDashboard() {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color="#111A44" />
-        <Text style={{ marginTop: 10, fontFamily: 'Cairo', color: '#111A44' }}>جاري تحديث بيانات الفارس...</Text>
+        <Text style={{ marginTop: 10, fontFamily: 'Cairo', color: '#111A44', fontSize: 13 }}>جاري تحديث بيانات الفارس ميدانياً...</Text>
       </View>
     );
   }
@@ -136,22 +154,22 @@ export default function DeliveryDashboard() {
         
         <View style={styles.debtReportCard}>
           <Text style={styles.debtReportLabel}>إجمالي الديون المستحقة للموقع:</Text>
-          <Text style={styles.debtReportValue}>{totalOwed} د.ج</Text>
+          <Text style={styles.debtReportValue}>{totalOwed} دج</Text>
         </View>
 
-        <Text style={styles.instructionsText}>يرجى إرسال المبلغ عبر حساب بريدي موب (BaridiMob) التالي لإعادة تفعيل حسابك فوراً:</Text>
+        <Text style={styles.instructionsText}>يرجى إرسال المبلغ عبر حساب بريدي موب (BaridiMob) التالي لإعادة تفعيل حسابك فوراً من طرف الإدارة:</Text>
         <View style={styles.ccpCard}>
           <Text style={styles.ccpNumber}>RIP: 00799999000123456789</Text>
           <Text style={styles.ccpOwner}>بإسم: مدير منصة سوق إكسبريس</Text>
         </View>
-        <Text style={styles.footerNote}>DZ Pro Vision - عين الصفراء</Text>
+        <Text style={styles.footerNote}>DZ Pro Vision • عين الصفراء</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* هيدر الموزع مع عداد التوصيلات المباشر من السيرفر */}
+      {/* هيدر الموزع مع التعديل العربي الكامل RTL ليتناسق مع التطبيق */}
       <View style={styles.header}>
         <View style={styles.counterBox}>
           <Text style={styles.counterValue}>{deliveryCounter} / 50</Text>
@@ -183,11 +201,11 @@ export default function DeliveryDashboard() {
             <View style={styles.divider} />
 
             <View style={styles.financialRow}>
-              <Text style={styles.financePrice}>{activeOrder.delivery_fee} د.ج</Text>
+              <Text style={styles.financePrice}>{activeOrder.delivery_fee} دج</Text>
               <Text style={styles.financeLabel}>🛵 حق التوصيل الخاص بك (ثابت):</Text>
             </View>
             <View style={styles.financialRow}>
-              <Text style={styles.financePrice}>{activeOrder.subtotal} د.ج</Text>
+              <Text style={styles.financePrice}>{activeOrder.subtotal} دج</Text>
               <Text style={styles.financeLabel}>💰 سعر السلع المطلوب تحصيله:</Text>
             </View>
 
@@ -197,7 +215,7 @@ export default function DeliveryDashboard() {
           </View>
         ) : (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>لا توجد طلبيات مسندة إليك حالياً. أنت في وضع الاستعداد لاستقبال الطلبات الجديدة! 🔄</Text>
+            <Text style={styles.emptyText}>لا توجد طلبيات مسندة إليك حالياً بالمنصة. أنت في وضع الاستعداد لاستقبال وإقلاع الطلبات الجديدة! 🔄</Text>
           </View>
         )}
       </ScrollView>
@@ -207,39 +225,39 @@ export default function DeliveryDashboard() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFBFD' },
-  header: { backgroundColor: '#111A44', padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 3, borderColor: '#F26522' },
-  headerTitle: { fontSize: 16, fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'Cairo' },
-  headerSubtitle: { fontSize: 11, color: '#A0AEC0', fontFamily: 'Tajawal', marginTop: 2 },
-  counterBox: { backgroundColor: 'rgba(255,255,255,0.08)', padding: 10, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
-  counterValue: { fontSize: 14, fontWeight: 'bold', color: '#F26522' },
-  counterLabel: { fontSize: 10, color: '#FFFFFF', fontFamily: 'Tajawal', marginTop: 2 },
+  header: { backgroundColor: '#111A44', padding: 20, flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 3, borderColor: '#F26522', paddingTop: 45 },
+  headerTitle: { fontSize: 15, fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'Cairo' },
+  headerSubtitle: { fontSize: 10, color: '#A0AEC0', fontFamily: 'Tajawal', marginTop: 2 },
+  counterBox: { backgroundColor: 'rgba(255,255,255,0.08)', padding: 8, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', minWidth: 75 },
+  counterValue: { fontSize: 13, fontWeight: 'bold', color: '#F26522', fontFamily: 'Tajawal' },
+  counterLabel: { fontSize: 9, color: '#FFFFFF', fontFamily: 'Tajawal', marginTop: 1 },
   scrollContent: { paddingBottom: 30 },
-  sectionTitle: { fontSize: 15, fontWeight: 'bold', color: '#111A44', marginHorizontal: 15, marginTop: 22, marginBottom: 10, textAlign: 'right', fontFamily: 'Cairo' },
-  orderCard: { backgroundColor: '#FFFFFF', marginHorizontal: 15, borderRadius: 14, padding: 18, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 },
-  orderHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-  orderStatusBadge: { backgroundColor: '#FFF4E5', color: '#B76E00', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 20, fontSize: 12, fontWeight: 'bold', fontFamily: 'Cairo' },
-  orderIdText: { fontSize: 13, color: '#718096', fontWeight: 'bold' },
+  sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#111A44', marginHorizontal: 15, marginTop: 22, marginBottom: 10, textAlign: 'right', fontFamily: 'Cairo' },
+  orderCard: { backgroundColor: '#FFFFFF', marginHorizontal: 15, borderRadius: 14, padding: 18, borderWidth: 1, borderColor: '#E2E8F0' },
+  orderHeaderRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
+  orderStatusBadge: { backgroundColor: '#FFF4E5', color: '#B76E00', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 20, fontSize: 11, fontWeight: 'bold', fontFamily: 'Cairo', overflow: 'hidden' },
+  orderIdText: { fontSize: 13, color: '#718096', fontWeight: 'bold', fontFamily: 'Tajawal' },
   infoLabel: { fontSize: 12, color: '#718096', textAlign: 'right', marginTop: 10, fontFamily: 'Tajawal' },
   infoValue: { fontSize: 14, fontWeight: 'bold', color: '#111A44', textAlign: 'right', marginTop: 2, fontFamily: 'Cairo' },
-  divider: { height: 1, backgroundColor: '#EDF2F7', my: 15, marginVertical: 15 },
-  financialRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  financePrice: { fontSize: 15, fontWeight: 'bold', color: '#111A44' },
-  financeLabel: { fontSize: 13, color: '#4A5568', fontFamily: 'Tajawal' },
+  divider: { height: 1, backgroundColor: '#EDF2F7', marginVertical: 15 },
+  financialRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  financePrice: { fontSize: 15, fontWeight: 'bold', color: '#111A44', fontFamily: 'Tajawal' },
+  financeLabel: { fontSize: 12, color: '#4A5568', fontFamily: 'Tajawal' },
   completeButton: { backgroundColor: '#137333', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 20 },
-  completeButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'Cairo' },
-  emptyCard: { backgroundColor: '#FFFFFF', marginHorizontal: 15, borderRadius: 12, padding: 25, borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center' },
-  emptyText: { fontSize: 13, color: '#718096', textAlign: 'center', fontFamily: 'Tajawal', lineHeight: 22 },
+  completeButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: 'bold', fontFamily: 'Cairo' },
+  emptyCard: { backgroundColor: '#FFFFFF', marginHorizontal: 15, borderRadius: 12, padding: 25, borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center', marginTop: 10 },
+  emptyText: { fontSize: 12, color: '#718096', textAlign: 'center', fontFamily: 'Tajawal', lineHeight: 22 },
   
-  // شاشة الحظر التلقائي الصارمة
+  // شاشة الحظر التلقائي المالي
   suspendedContainer: { flex: 1, backgroundColor: '#FFFFFF', padding: 25, justifyContent: 'center', alignItems: 'center' },
-  suspendedTitle: { fontSize: 22, fontWeight: 'bold', color: '#C5221F', fontFamily: 'Cairo', textAlign: 'center', marginBottom: 10 },
-  suspendedText: { fontSize: 14, color: '#4A5568', textAlign: 'center', fontFamily: 'Tajawal', lineHeight: 24, marginBottom: 20 },
+  suspendedTitle: { fontSize: 20, fontWeight: 'bold', color: '#C5221F', fontFamily: 'Cairo', textAlign: 'center', marginBottom: 10 },
+  suspendedText: { fontSize: 13, color: '#4A5568', textAlign: 'center', fontFamily: 'Tajawal', lineHeight: 24, marginBottom: 20 },
   debtReportCard: { backgroundColor: '#FCE8E6', padding: 15, borderRadius: 12, width: '100%', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#F8D7DA' },
   debtReportLabel: { fontSize: 13, color: '#C5221F', fontFamily: 'Tajawal' },
-  debtReportValue: { fontSize: 24, fontWeight: 'bold', color: '#C5221F', marginTop: 5 },
-  instructionsText: { fontSize: 13, color: '#4A5568', textAlign: 'center', fontFamily: 'Tajawal', marginBottom: 15, lineHeight: 20 },
+  debtReportValue: { fontSize: 24, fontWeight: 'bold', color: '#C5221F', marginTop: 5, fontFamily: 'Tajawal' },
+  instructionsText: { fontSize: 13, color: '#4A5568', textAlign: 'center', fontFamily: 'Tajawal', marginBottom: 15, lineHeight: 22 },
   ccpCard: { backgroundColor: '#111A44', padding: 20, borderRadius: 14, width: '100%', alignItems: 'center' },
-  ccpNumber: { fontSize: 16, fontWeight: 'bold', color: '#FFFFFF', letterSpacing: 1 },
-  ccpOwner: { fontSize: 13, color: '#F26522', fontFamily: 'Cairo', marginTop: 8 },
-  footerNote: { fontSize: 11, color: '#A0AEC0', fontFamily: 'Tajawal', marginTop: 30 }
+  ccpNumber: { fontSize: 15, fontWeight: 'bold', color: '#FFFFFF', letterSpacing: 0.5, fontFamily: 'Tajawal' },
+  ccpOwner: { fontSize: 12, color: '#F26522', fontFamily: 'Cairo', marginTop: 8 },
+  footerNote: { fontSize: 10, color: '#A0AEC0', fontFamily: 'Tajawal', marginTop: 40 }
 });
