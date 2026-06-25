@@ -22,6 +22,7 @@ export default function TabsLayout() {
     }
     fetchUserRole();
   }, []);
+
   return (
     <Tabs
       screenOptions={{
@@ -46,17 +47,19 @@ export default function TabsLayout() {
           tabBarIcon: () => <Text style={styles.iconText}>🏠</Text>,
         }}
       />
+      
       <Tabs.Screen
         name="merchant"
-      options={{
-        href: role === 'merchant' ? undefined : null,
+        options={{
+          href: role === 'merchant' ? undefined : null,
           title: 'التاجر',
           tabBarLabel: ({ color }) => <Text style={[styles.labelText, { color }]}>متجري</Text>,
           tabBarIcon: () => <Text style={styles.iconText}>🏪</Text>,
         }}
       />
+      
       <Tabs.Screen
-        name="delivery",
+        name="delivery"
         options={{
           title: 'الموصل',
           tabBarLabel: ({ color }) => <Text style={[styles.labelText, { color }]}>التوصيل</Text>,
