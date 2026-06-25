@@ -89,15 +89,25 @@ export default function RegisterScreen() {
       return;
     }
 
+    // 🌟 تحويل رقم الهاتف تلقائياً وصارماً إلى الصيغة الدولية E.164 المطلوبة في Supabase
+    let formattedPhone = phone.trim().replace(/\s+/g, '');
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '+213' + formattedPhone.substring(1);
+    } else if (!formattedPhone.startsWith('+')) {
+      formattedPhone = '+213' + formattedPhone;
+    }
+
     setLoading(true);
     try {
-      // 1. إنشاء الحساب في عميل الأمان السحابي Supabase Auth
+      // 1. إنشاء الحساب في عميل الأمان السحابي Supabase Auth بالصيغة الدولية المحدثة
       const { data: authData, error: authError } = await supabase.auth.signUp({
-          phone: phone,
+          phone: formattedPhone,
           password: password,
           options: {
             data: {
-              role: userType === 'customer' ? 'client' : userType
+              role: userType === 'customer' ? 'client' : userType,
+              name: userType === 'customer' ? customerName : (userType === 'merchant' ? merchantName : driverName),
+              zone: selectedZone
             }
           }
         });
@@ -109,7 +119,6 @@ export default function RegisterScreen() {
         Alert.alert('تم التسجيل بنجاح 🎉', `مرحباً بك يا ${customerName}، حسابك كزبون نشط الآن في حي (${selectedZone})!`);
       } 
       else if (userType === 'merchant') {
-        // حماية السلسلة النصية ودمج تفاصيل الإنتاج المنزلي بنظافة هندسية
         const finalCategory = selectedCategory === 'بيع من المنزل' 
           ? `بيع من المنزل (${homeProductType.trim() || 'حرفي'})` 
           : selectedCategory;
@@ -205,21 +214,18 @@ export default function RegisterScreen() {
         {/* 2️⃣ واجهة التاجر المحدثة والمنظمة هندسياً وبصرياً بدقة عالية */}
         {userType === 'merchant' && (
           <View>
-            {/* أ. اسم صاحب الحساب */}
             <Text style={styles.inputLabel}>اسم التاجر:</Text>
             <TextInput style={styles.input} placeholder="الاسم واللقب الحقيقي للتواصل الإداري" value={merchantName} onChangeText={setMerchantName} />
 
-            {/* ب. اسم النشاط التجاري */}
             <Text style={styles.inputLabel}>الاسم التجاري للمحل أو التجارة:</Text>
             <TextInput style={styles.input} placeholder="مثال: سوبرماركت الفتح، صيدلية الشفاء..." value={storeName} onChangeText={setStoreName} />
             
-            {/* جـ. القائمة المنسدلة للتصنيفات التجارية المحدثة */}
             <Text style={styles.inputLabel}>تصنيف النشاط التجاري:</Text>
             <TouchableOpacity 
               style={styles.dropdownSelector} 
               onPress={() => { 
                 setShowCategoryDropdown(!showCategoryDropdown); 
-                setShowZoneDropdown(false); // تأمين الحماية البرمجية لمنع التداخل مع قائمة الأحياء
+                setShowZoneDropdown(false);
               }}
             >
               <Text style={styles.dropdownSelectorText}>{selectedCategory}</Text>
@@ -238,7 +244,6 @@ export default function RegisterScreen() {
               </View>
             )}
 
-            {/* د. الحقل المشروط لـ "بيع من المنزل" - يظهر ويختفي ديناميكياً وسلس مية بالمية */}
             {selectedCategory === 'بيع من المنزل' && (
               <View>
                 <Text style={styles.inputLabel}>نوع المنتج المصنوع في المنزل:</Text>
@@ -246,13 +251,12 @@ export default function RegisterScreen() {
               </View>
             )}
 
-            {/* هـ. القائمة المنسدلة للأحياء التجارية */}
             <Text style={styles.inputLabel}>موقع المحل (اختر الحي التجاري):</Text>
             <TouchableOpacity 
               style={styles.dropdownSelector} 
               onPress={() => { 
                 setShowZoneDropdown(!showZoneDropdown); 
-                setShowCategoryDropdown(false); // تأمين الحماية البرمجية لمنع التداخل مع قائمة التصنيفات
+                setShowCategoryDropdown(false);
               }}
             >
               <Text style={styles.dropdownSelectorText}>{selectedZone}</Text>
