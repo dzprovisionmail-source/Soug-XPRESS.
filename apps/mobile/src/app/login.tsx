@@ -1,3 +1,9 @@
+import { LogBox } from 'react-native';
+try {
+  const KA = require('expo-keep-awake');
+  if (KA) { KA.activateKeepAwakeAsync = () => Promise.resolve(); KA.deactivateKeepAwakeAsync = () => Promise.resolve(); }
+} catch (e) {}
+LogBox.ignoreLogs(['Unable to activate keep awake']);
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
