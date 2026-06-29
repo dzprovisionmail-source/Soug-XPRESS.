@@ -1,0 +1,9 @@
+{
+  "plugins": [
+    "expo-router",
+    "expo-web-browser"
+  ],
+  "expo": {
+    "scheme": "sougxpress"
+  }
+}
