@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from './supabase';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -11,11 +15,10 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!phone || !password) {
-      Alert.alert('تنبيه', 'الرجاء إدخال رقم الهاتف وكلمة المرور أولاً');
+      Alert.alert('تنبيه', 'الرجاء ملء حقول الهاتف وكلمة المرور');
       return;
     }
 
-    // 🌟 تحويل رقم الهاتف تلقائياً وصارماً إلى الصيغة الدولية E.164 المطابقة لقاعدة البيانات
     let formattedPhone = phone.trim().replace(/\s+/g, '');
     if (formattedPhone.startsWith('0')) {
       formattedPhone = '+213' + formattedPhone.substring(1);
@@ -25,7 +28,6 @@ export default function LoginScreen() {
 
     setLoading(true);
     try {
-      // تسجيل الدخول باستخدام المعرّف الدولي المهيأ
       const { data, error } = await supabase.auth.signInWithPassword({
         phone: formattedPhone,
         password: password,
@@ -33,71 +35,131 @@ export default function LoginScreen() {
 
       if (error) throw error;
 
-      // عند النجاح، يتم توجيهه مباشرة للوحة الرئيسية للتطبيق
-      Alert.alert('مرحباً بك مجدداً 🎉', 'تم تسجيل الدخول بنجاح آمن!');
+      Alert.alert('تم بنجاح 🎉', 'تم تسجيل الدخول بنجاح');
       router.push('/');
-      
     } catch (error: any) {
-      Alert.alert('فشل تسجيل الدخول', 'بيانات الدخول غير صحيحة، يرجى التأكد من الرقم والرمز السري.');
+      Alert.alert('خطأ في تسجيل الدخول', error.message);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      const redirectTo = Linking.createURL('/(auth)/callback');
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+        if (result.type === 'success') {
+          router.push('/');
+        }
+      }
+    } catch (error: any) {
+      Alert.alert('خطأ', error.message);
+    }
+  };
+
   return (
-    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>سوق إكسبريس ⚡</Text>
-      <Text style={styles.subtitle}>بوابتك الآمنة للتسوق والتوصيل في عين الصفراء</Text>
+      <Text style={styles.subtitle}>مرحباً بك مجدداً في تطبيق سوق إكسبريس</Text>
 
-      <View style={styles.formCard}>
-        <Text style={styles.cardHeader}>🔐 تسجيل دخول المستخدمين</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="رقم الهاتف"
+        value={phone}
+        onChangeText={setPhone}
+        keyboardType="phone-pad"
+      />
 
-        <Text style={styles.inputLabel}>رقم هاتف الحساب:</Text>
-        <TextInput 
-          style={styles.input} 
-          placeholder="06xxxxxxxx أو 05xxxxxxxx" 
-          keyboardType="phone-pad" 
-          value={phone} 
-          onChangeText={setPhone} 
-        />
+      <TextInput
+        style={styles.input}
+        placeholder="كلمة المرور"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
 
-        <Text style={styles.inputLabel}>كلمة المرور السرية:</Text>
-        <TextInput 
-          style={styles.input} 
-          placeholder="إدخال رمز المرور الخاص بك" 
-          secureTextEntry={true} 
-          value={password} 
-          onChangeText={setPassword} 
-        />
+      <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>تسجيل الدخول</Text>}
+      </TouchableOpacity>
 
-        <TouchableOpacity style={styles.submitBtn} onPress={handleLogin} disabled={loading}>
-          {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.submitBtnText}>🚀 تسجيل الدخول الآمن</Text>}
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.adminLinkBtn} onPress={() => Alert.alert('قسم الإدارة', 'هذا القسم مخصص لطاقم التطوير والمراجعة الإدارية فقط.')}>
-          <Text style={styles.adminLinkText}>🛠️ الدخول الخاص بطاقم الإدارة</Text>
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity style={styles.registerLinkBtn} onPress={() => router.push('/register')}>
-        <Text style={styles.registerLinkText}>سجل حسابك الآن من هنا؟</Text>
+      <TouchableOpacity onPress={handleGoogleLogin} style={styles.googleButton}>
+        <Text style={styles.googleButtonText}>الدخول السريع بواسطة Google 🚀</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: '#FAFBFD', alignItems: 'center', paddingBottom: 40, justifyContent: 'center', flexGrow: 1 },
-  title: { fontSize: 26, fontWeight: 'bold', color: '#111A44', fontFamily: 'Cairo', marginTop: 10 },
-  subtitle: { fontSize: 12, color: '#718096', fontFamily: 'Tajawal', marginTop: 4, marginBottom: 30, textAlign: 'center' },
-  formCard: { backgroundColor: '#FFFFFF', width: '100%', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
-  cardHeader: { fontSize: 16, fontWeight: 'bold', color: '#111A44', fontFamily: 'Cairo', textAlign: 'center', marginBottom: 15 },
-  inputLabel: { fontSize: 13, fontWeight: 'bold', color: '#4A5568', textAlign: 'right', marginBottom: 6, fontFamily: 'Cairo', marginTop: 12 },
-  input: { borderWidth: 1, borderColor: '#CBD5E0', borderRadius: 8, padding: 12, textAlign: 'right', fontSize: 14, fontFamily: 'Tajawal', backgroundColor: '#F8FAFC', marginBottom: 10 },
-  submitBtn: { backgroundColor: '#F26522', paddingVertical: 14, borderRadius: 10, alignItems: 'center', marginTop: 20 },
-  submitBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'Cairo' },
-  adminLinkBtn: { marginTop: 15, alignItems: 'center' },
-  adminLinkText: { color: '#718096', fontSize: 12, fontFamily: 'Tajawal', textDecorationLine: 'underline' },
-  registerLinkBtn: { marginTop: 25 },
-  registerLinkText: { color: '#F26522', fontSize: 13, fontWeight: 'bold', fontFamily: 'Cairo', textDecorationLine: 'underline' }
+  container: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f7fafc',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#1a202c',
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#718096',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  input: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 15,
+    textAlign: 'right',
+  },
+  button: {
+    width: '100%',
+    height: 50,
+    backgroundColor: '#3182ce',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  googleButton: {
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginTop: 20,
+    width: '100%',
+  },
+  googleButtonText: {
+    color: '#1A202C',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
