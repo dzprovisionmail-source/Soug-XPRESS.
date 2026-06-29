@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
-import { supabase } from './supabase'; // استيراد العميل السحابي مباشرة
+import { supabase } from '../supabase'; // استيراد العميل السحابي مباشرة
 
 interface Store {
   id: string;

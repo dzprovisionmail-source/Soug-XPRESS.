@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase } from './supabase';
+import { supabase } from '../supabase';
 
 // قائمة الأحياء الرسمية والدقيقة لعين الصفراء بناءً على تسميات أهل المدينة
 const AIN_SEFRA_NEIGHBORHOODS = [

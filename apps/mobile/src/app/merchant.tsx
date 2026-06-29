@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image, Modal, FlatList } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { supabase } from './supabase';
+import { supabase } from '../supabase';
 
 export default function MerchantDashboard() {
   const [loading, setLoading] = useState(false);
