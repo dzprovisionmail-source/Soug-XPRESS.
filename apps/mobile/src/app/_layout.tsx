@@ -1,85 +1,63 @@
-import { LogBox } from 'react-native';
-try {
-  const KA = require('expo-keep-awake');
-  if (KA) { KA.activateKeepAwakeAsync = () => Promise.resolve(); KA.deactivateKeepAwakeAsync = () => Promise.resolve(); }
-} catch (e) {}
+import React, { useEffect } from 'react';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { ActivityIndicator, View, LogBox } from 'react-native';
+import { AuthProvider, useAuth } from '../context/AuthContext';
+
 LogBox.ignoreLogs(['Unable to activate keep awake']);
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
-import { Slot, useRouter } from 'expo-router';
 
-export default function RootLayout() {
-  const [currentView, setCurrentView] = useState<'customer' | 'merchant' | 'delivery'>('customer');
-  const router = useRouter();
+function RootLayoutNav() {
+const { session, userProfile, isLoading } = useAuth();
+const segments = useSegments();
+const router = useRouter();
 
-  const handleToggleView = (view: 'customer' | 'merchant' | 'delivery') => {
-    setCurrentView(view);
-    if (view === 'customer') router.push('/(tabs)/home');
-    if (view === 'merchant') router.push('/(tabs)/merchant');
-    if (view === 'delivery') router.push('/(tabs)/delivery');
-  };
+useEffect(() => {
+if (isLoading) return;
+const inAuthGroup = segments[0] === 'login';
+const inRegisterPage = segments[0] === 'register';
 
-  return (
-    <SafeAreaView style={styles.container}>
-      {/* شريط المطور السريع - DEV BAR */}
-      <View style={styles.devBar}>
-        <TouchableOpacity 
-          style={[styles.devButton, currentView === 'customer' && styles.activeButton]} 
-          onPress={() => handleToggleView('customer')}
-        >
-          <Text style={styles.btnText}>🏠 زبون</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.devButton, currentView === 'merchant' && styles.activeButton]} 
-          onPress={() => handleToggleView('merchant')}
-        >
-          <Text style={styles.btnText}>🏪 تاجر</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={[styles.devButton, currentView === 'delivery' && styles.activeButton]} 
-          onPress={() => handleToggleView('delivery')}
-        >
-          <Text style={styles.btnText}>🛵 موصل</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* عرض الشاشة الحالية */}
-      <View style={styles.content}>
-        <Slot />
-      </View>
-    </SafeAreaView>
-  );
+if (!session) {
+if (!inAuthGroup) router.replace('/login');
+return;
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  devBar: {
-    flexDirection: 'row',
-    backgroundColor: '#1B2A6B', // الأزرق الداكن الرسمي
-    padding: 10,
-    justifyContent: 'space-around',
-    alignItems: 'center',
-  },
-  devButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  activeButton: {
-    backgroundColor: '#F26522', // البرتقالي الرسمي للزر النشط
-  },
-  btnText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontFamily: 'Tajawal',
-  },
-  content: {
-    flex: 1,
-  },
-});
+const hasNoRole = !userProfile?.role;
+const isProfileIncomplete = !userProfile?.full_name || !userProfile?.phone || !userProfile?.zone;
+
+if (hasNoRole || isProfileIncomplete) {
+if (!inRegisterPage) router.replace('/register');
+return;
+}
+
+if (userProfile.role === 'merchant') {
+if (segments[0] !== '(tabs)' || segments[1] !== 'merchant') router.replace('/(tabs)/merchant');
+} else if (userProfile.role === 'delivery') {
+if (segments[0] !== '(tabs)' || segments[1] !== 'delivery') router.replace('/(tabs)/delivery');
+} else {
+if (segments[0] !== '(tabs)' || segments[1] !== 'home') router.replace('/(tabs)/home');
+}
+}, [session, userProfile, segments, isLoading]);
+
+if (isLoading) {
+return (
+<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F7FAFC' }}>
+<ActivityIndicator size="large" color="#F26522" />
+</View>
+);
+}
+
+return (
+<Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+<Stack.Screen name="login" />
+<Stack.Screen name="register" />
+<Stack.Screen name="(tabs)" />
+</Stack>
+);
+}
+
+export default function RootLayout() {
+return (
+<AuthProvider>
+<RootLayoutNav />
+</AuthProvider>
+);
+}
