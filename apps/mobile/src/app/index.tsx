@@ -78,7 +78,10 @@ export default function RootEntryScreen() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setFeedData(data || []);
+      // Supabase relational select returns `stores` as an array at the type level,
+      // but the query always returns a single store object per post at runtime.
+      // Cast to MediaPost[] to align with our interface.
+      setFeedData((data || []) as unknown as MediaPost[]);
     } catch (error) {
       console.log('خطأ في جلب التغذية:', error);
     } finally {

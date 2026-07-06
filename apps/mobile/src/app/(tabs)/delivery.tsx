@@ -5,25 +5,33 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'rea
 export default function DeliveryDashboard() {
   // محاكاة لعدد التوصيلات الحالية للموزع
   const [deliveryCounter, setDeliveryCounter] = useState(0);
-  const [driverId, setDriverId] = useState(null);
+  const [driverId, setDriverId] = useState<string | null>(null);
+
+  const [isSuspended, setIsSuspended] = useState(false);
 
   useEffect(() => {
     async function loadDriverData() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          setDriverId(user.id);
-          const { data: driverData } = await supabase.from('drivers').select('delivery_counter, is_suspended').eq('id', user.id).single();
-          if (driverData) {
-            setDeliveryCounter(driverData.delivery_counter || 0);
-            setIsSuspended(driverData.is_suspended || false);
-          }
+        if (!user) {
+          // No authenticated session — do not fall back to loading a random driver's data
+          console.log('[DeliveryTab] No active session. Skipping driver data load.');
+          return;
+        }
+        setDriverId(user.id);
+        const { data: driverData } = await supabase
+          .from('drivers')
+          .select('delivery_counter, is_suspended')
+          .eq('id', user.id)
+          .single();
+        if (driverData) {
+          setDeliveryCounter(driverData.delivery_counter || 0);
+          setIsSuspended(driverData.is_suspended || false);
         }
       } catch (err) { console.log(err); }
     }
     loadDriverData();
-  }, []); 
-  const [isSuspended, setIsSuspended] = useState(false);
+  }, []);
 
   // إعدادات النظام المالي الثابتة
   const DELIVERY_FEE = 100; // سعر التوصيل الثابت داخل المدينة
@@ -133,8 +141,11 @@ export default function DeliveryDashboard() {
           <Text style={styles.routeText}>🏪 من: سوبرماركت الهناء (حي الضلعة)</Text>
           <Text style={styles.routeText}>📍 إلى: حي قصر البلاد</Text>
           
-          <TouchableOpacity 
-            style={[styles.acceptButton, deliveryCounter >= 50 && styles.disabledButton]} 
+          {/* TODO(Phase 2): Replace this hardcoded sample request with live orders
+              fetched from the `orders` table where driver_id IS NULL (available orders).
+              The mock order id 'D-909' does not exist in the database. */}
+          <TouchableOpacity
+            style={[styles.acceptButton, deliveryCounter >= 50 && styles.disabledButton]}
             onPress={() => handleAcceptDelivery('D-909')}
           >
             <Text style={styles.acceptButtonText}>

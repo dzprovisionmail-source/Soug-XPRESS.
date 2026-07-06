@@ -13,6 +13,9 @@ const categories = [
   { id: '4', title: 'خضار وفواكه', icon: '🥦' },
 ];
 
+// TODO(Phase 2): Remove mock data. Replace with empty [] initial state and proper empty-state UI.
+// This mock data shows when the `stores` Supabase table is empty.
+// Real stores added by merchants via the merchant dashboard will replace this automatically.
 const mockStores = [
   { id: '1', name: 'متجر الهناء للمواد الغذائية', rating: '4.8', status: 'مفتوح', zone: 'حي الضلعة' },
   { id: '2', name: 'مطعم ومشاوي القصر', rating: '4.9', status: 'مفتوح', zone: 'قصر البلاد' },

@@ -2,9 +2,16 @@ import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
-// بيانات الربط الرسمية والآمنة الخاصة بمشروعك Soug-Xpress
-const supabaseUrl = 'https://vztpzxigxmgbpakkbyrs.supabase.co';
-const supabaseAnonKey = 'sb_publishable_XDS7enJj9dl0efvKhgAz8A_dFjm0RGj';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    '[SOUG XPRESS] Missing Supabase credentials.\n' +
+    'Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in your environment.\n' +
+    'See .env.example at the project root for reference.'
+  );
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

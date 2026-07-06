@@ -1,32 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../supabase';
+import React from 'react';
 import { Tabs } from 'expo-router';
 import { Text, StyleSheet } from 'react-native';
+import { useAuth } from '../../context/AuthContext';
 
 export default function TabsLayout() {
-  const [role, setRole] = useState(null);
-
-  useEffect(() => {
-    async function fetchUserRole() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const userRole = user.user_metadata?.role || 'client';
-          setRole(userRole);
-        } else {
-          setRole('client');
-        }
-      } catch (err) {
-        setRole('client');
-      }
-    }
-    fetchUserRole();
-  }, []);
+  // Single source of truth: profiles.role from Supabase DB via AuthContext.
+  // Do NOT read from user.user_metadata.role — that field is never written by this app.
+  const { userProfile } = useAuth();
+  const role = userProfile?.role ?? null;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#F26522', // البرتقالي الرسمي للتبويب النشط
+        tabBarActiveTintColor: '#F26522',
         tabBarInactiveTintColor: '#888888',
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
@@ -36,7 +22,7 @@ export default function TabsLayout() {
           paddingBottom: 8,
           paddingTop: 8,
         },
-        headerShown: false, // إخفاء الهيدر الافتراضي لأننا صممنا هيدر مخصص
+        headerShown: false,
       }}
     >
       <Tabs.Screen
@@ -47,20 +33,23 @@ export default function TabsLayout() {
           tabBarIcon: () => <Text style={styles.iconText}>🏠</Text>,
         }}
       />
-      
+
       <Tabs.Screen
         name="merchant"
         options={{
+          // Only visible to merchants (profiles.role = 'merchant')
           href: role === 'merchant' ? undefined : null,
           title: 'التاجر',
           tabBarLabel: ({ color }) => <Text style={[styles.labelText, { color }]}>متجري</Text>,
           tabBarIcon: () => <Text style={styles.iconText}>🏪</Text>,
         }}
       />
-      
+
       <Tabs.Screen
         name="delivery"
         options={{
+          // Only visible to delivery drivers (profiles.role = 'delivery')
+          href: role === 'delivery' ? undefined : null,
           title: 'الموصل',
           tabBarLabel: ({ color }) => <Text style={[styles.labelText, { color }]}>التوصيل</Text>,
           tabBarIcon: () => <Text style={styles.iconText}>🛵</Text>,

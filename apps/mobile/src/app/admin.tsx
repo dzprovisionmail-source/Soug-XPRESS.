@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
-import { supabase } from '../supabase'; // استيراد العميل السحابي مباشرة
+import { Redirect } from 'expo-router';
+import { supabase } from '../supabase';
+import { useAuth } from '../context/AuthContext';
 
 interface Store {
   id: string;
@@ -19,6 +21,10 @@ interface Driver {
 }
 
 export default function AdminDashboard() {
+  // All hooks must be declared before any conditional returns (Rules of Hooks)
+  // 🔒 Single source of truth: role from profiles table via AuthContext
+  const { userProfile, isLoading: authLoading } = useAuth();
+
   const [stores, setStores] = useState<Store[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
@@ -163,6 +169,21 @@ export default function AdminDashboard() {
       ]
     );
   };
+
+  // 🔒 SECURITY GUARD — conditionals AFTER all hooks (Rules of Hooks compliant)
+  if (authLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#F26522" />
+      </View>
+    );
+  }
+
+  // Only profiles.role = 'admin' may see this panel.
+  // _layout.tsx also redirects non-admins away — this is a second layer of defense.
+  if (userProfile?.role !== 'admin') {
+    return <Redirect href="/(tabs)/home" />;
+  }
 
   if (loading) {
     return (

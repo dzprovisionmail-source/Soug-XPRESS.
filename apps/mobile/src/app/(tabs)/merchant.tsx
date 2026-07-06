@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput 
 
 export default function MerchantDashboard() {
   const [displayStoreName, setDisplayStoreName] = useState('جاري تحميل اسم المتجر...');
-  const [merchantId, setMerchantId] = useState(null);
+  const [merchantId, setMerchantId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadMerchantData() {
@@ -27,21 +27,24 @@ export default function MerchantDashboard() {
   // وضعتها كـ State لتتمكن من تجربة الحالتين في العرض والتنقل بينهما
   const [isFirstMonth, setIsFirstMonth] = useState(true);
 
-  // إحصائيات المبيعات الافتراضية لليوم بالدينار الجزائري
-  const [totalSales, setTotalSales] = useState(8500); 
+  // TODO(Phase 2): Replace with real daily sales fetched from the `orders` table.
+  // This is a hardcoded fallback — it does NOT reflect actual merchant revenue.
+  const [totalSales, setTotalSales] = useState(8500);
 
   // العداد المالي الذكي المبني على سياسة المنصة الجديدة
   const SITE_COMMISSION_PCT = isFirstMonth ? 0 : 0.05; 
   const totalOwedToSite = totalSales * SITE_COMMISSION_PCT;
   const netMerchantProfit = totalSales - totalOwedToSite;
 
-  // محاكاة لقائمة المنتجات التي عليها تخفيضات (Promotions) داخل المحل
+  // TODO(Phase 2): Initial promo items should be empty []. These hardcoded items appear before
+  // any real promotions are loaded from Supabase.
   const [promoItems, setPromoItems] = useState([
     { id: 'p1', name: 'كيس دقيق 10 كغ', originalPrice: '650 د.ج', promoPrice: '590 د.ج' },
     { id: 'p2', name: 'عصير رامي لتر ونصف', originalPrice: '210 د.ج', promoPrice: '180 د.ج' },
   ]);
 
-  // محاكاة لتعليقات الزبائن المفتوحة (الذين طلبوا والذين استفسروا فقط)
+  // TODO(Phase 2): Replace with live comments fetched from the `comments` table for this store's posts.
+  // These are hardcoded sample comments — not real customer interactions.
   const [comments, setComments] = useState([
     { id: 'c1', user: 'أحمد بوعلام', text: 'هل يتوفر عندكم حليب الأكياس اليوم؟', date: 'منذ 10 دقائق', isBuyer: false },
     { id: 'c2', user: 'مريم الصافية', text: 'الخدمة ممتازة والتوصيل سريع جداً بارك الله فيكم', date: 'منذ ساعة', isBuyer: true },
