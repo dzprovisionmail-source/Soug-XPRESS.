@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Colors, Spacing, Radius, Shadow } from '../../constants/theme';
 
 // Official logo from apps/mobile/assets/images/logo.png
-const logoAsset = require('../../assets/images/logo.png');
+const logoAsset = require('../../../assets/images/logo.png');
 
 const categories = [
   { id: '1', title: 'سوبر ماركت', icon: '🛒' },

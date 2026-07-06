@@ -24,7 +24,7 @@ LogBox.ignoreLogs(['Unable to activate keep awake']);
 
 WebBrowser.maybeCompleteAuthSession();
 
-const logoAsset = require('../assets/images/logo.png');
+const logoAsset = require('../../assets/images/logo.png');
 
 export default function LoginScreen() {
   const router = useRouter();

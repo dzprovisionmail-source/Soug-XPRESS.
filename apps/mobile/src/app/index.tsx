@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../supabase';
 import { Colors, Spacing, Radius, Shadow } from '../constants/theme';
 
-const logoAsset = require('../assets/images/logo.png');
+const logoAsset = require('../../assets/images/logo.png');
 
 const { width } = Dimensions.get('window');
 
