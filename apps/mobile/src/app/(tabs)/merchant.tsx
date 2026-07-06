@@ -41,12 +41,34 @@ export default function MerchantDashboard() {
   const [merchantId, setMerchantId] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
+<<<<<<< HEAD
   // ── Store profile ────────────────────────────────────────────────────────
   const [storeName, setStoreName] = useState('');
   const [storeLogo, setStoreLogo] = useState<string | null>(null);
 
   // ── Financial dashboard (mock data — TODO Phase 3) ───────────────────────
   // TODO(Phase 3): Replace totalSales with real daily aggregation from `orders` table.
+=======
+  useEffect(() => {
+    async function loadMerchantData() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setMerchantId(user.id);
+          const { data: storeData } = await supabase.from('stores').select('name').eq('id', user.id).single();
+          if (storeData && storeData.name) {
+            setDisplayStoreName(storeData.name + ' (عين الصفراء)');
+          }
+          const { data: livePromos } = await supabase.from('products_promos').select('*').eq('store_id', user.id);
+          if (livePromos) setPromoItems(livePromos);
+        }
+      } catch (err) { console.log(err); }
+    }
+    loadMerchantData();
+  }, []);
+  // 📆 حالة الاشتراك: true تعني الشهر الأول المجاني (أرباح 100%)، و false تعني الشهر الثاني فما فوق (عمولة 5%)
+  // وضعتها كـ State لتتمكن من تجربة الحالتين في العرض والتنقل بينهما
+>>>>>>> 4b9d0079 (fix: use products_promos table for merchant promos)
   const [isFirstMonth, setIsFirstMonth] = useState(true);
   const [totalSales, setTotalSales] = useState(8500);
   // No commission on merchants — net profit always equals total sales.
@@ -107,7 +129,7 @@ export default function MerchantDashboard() {
 
       // 3. Promotions — always override state with DB result (empty [] if none)
       const { data: livePromos } = await supabase
-        .from('promotions')
+        .from('products_promos')
         .select('*')
         .eq('store_id', userId);
       setPromoItems((livePromos || []).map(toPromoItem));
@@ -204,7 +226,7 @@ export default function MerchantDashboard() {
     }
     try {
       const { data, error } = await supabase
-        .from('promotions')
+        .from('products_promos')
         .insert([{
           store_id: merchantId,
           name: newPromoName,
