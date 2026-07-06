@@ -23,6 +23,7 @@ import {
   TouchableOpacity, Alert, ActivityIndicator,
 } from 'react-native';
 import { supabase } from '../../supabase';
+import { Colors, Spacing, Radius, Shadow } from '../../constants/theme';
 import {
   BARIDIMOB_RIP,
   DELIVERY_FEE_DZD,
@@ -165,8 +166,8 @@ export default function DeliveryDashboard() {
   if (loading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#111A44" />
-        <Text style={{ marginTop: 10, fontFamily: 'Cairo', color: '#111A44', fontSize: 13 }}>
+        <ActivityIndicator size="large" color={Colors.navyDark} />
+        <Text style={{ marginTop: Spacing.sm, fontFamily: 'Cairo', color: Colors.navyDark, fontSize: 13 }}>
           جاري تحديث بيانات الفارس ميدانياً...
         </Text>
       </View>
@@ -237,13 +238,13 @@ export default function DeliveryDashboard() {
           </View>
           <View style={styles.divider} />
           <View style={styles.financeRow}>
-            <Text style={[styles.financeValue, { color: '#137333' }]}>{totalDriverEarnings} د.ج</Text>
+            <Text style={[styles.financeValue, { color: Colors.success }]}>{totalDriverEarnings} د.ج</Text>
             <Text style={styles.financeLabel}>
               صافي أرباحك كاش ({DRIVER_PROFIT_PER_TRIP_DZD} دج/رحلة):
             </Text>
           </View>
           <View style={styles.financeRow}>
-            <Text style={[styles.financeValue, { color: '#C5221F' }]}>{totalOwedToSite} د.ج</Text>
+            <Text style={[styles.financeValue, { color: Colors.danger }]}>{totalOwedToSite} د.ج</Text>
             <Text style={styles.financeLabel}>
               مستحقات الموقع ({PLATFORM_CUT_PER_TRIP_DZD} دج/رحلة):
             </Text>
@@ -305,72 +306,73 @@ export default function DeliveryDashboard() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFBFD' },
+  container: { flex: 1, backgroundColor: Colors.bgScreen },
 
   // Header
   header: {
-    backgroundColor: '#111A44',
-    padding: 20,
+    backgroundColor: Colors.navyDark,
+    padding: Spacing.lg,
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 3,
-    borderColor: '#F26522',
-    paddingTop: 45,
+    borderColor: Colors.primary,
+    paddingTop: Spacing.headerTop,
   },
-  headerTitle: { fontSize: 15, fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'Cairo' },
-  headerSubtitle: { fontSize: 10, color: '#A0AEC0', fontFamily: 'Tajawal', marginTop: 2 },
+  headerTitle: { fontSize: 15, fontWeight: 'bold', color: Colors.white, fontFamily: 'Cairo' },
+  headerSubtitle: { fontSize: 10, color: Colors.textOnDarkMuted, fontFamily: 'Tajawal', marginTop: 2 },
   counterBox: {
     backgroundColor: 'rgba(255,255,255,0.08)',
-    padding: 8,
-    borderRadius: 10,
+    padding: Spacing.sm,
+    borderRadius: Radius.md,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
     minWidth: 75,
   },
-  counterValue: { fontSize: 13, fontWeight: 'bold', color: '#F26522', fontFamily: 'Tajawal' },
-  counterLabel: { fontSize: 9, color: '#FFFFFF', fontFamily: 'Tajawal', marginTop: 1 },
+  counterValue: { fontSize: 13, fontWeight: 'bold', color: Colors.primary, fontFamily: 'Tajawal' },
+  counterLabel: { fontSize: 9, color: Colors.white, fontFamily: 'Tajawal', marginTop: 1 },
 
   // Layout
   scrollContent: { paddingBottom: 30 },
   sectionTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#111A44',
-    marginHorizontal: 15,
-    marginTop: 22,
-    marginBottom: 10,
+    color: Colors.navyDark,
+    marginHorizontal: Spacing.base,
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.md,
     textAlign: 'right',
     fontFamily: 'Cairo',
   },
-  divider: { height: 1, backgroundColor: '#EDF2F7', marginVertical: 12 },
+  divider: { height: 1, backgroundColor: Colors.border, marginVertical: Spacing.md },
 
   // Stats card (progress bar + financial breakdown)
   statsCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 15,
-    borderRadius: 14,
-    padding: 15,
+    backgroundColor: Colors.bgCard,
+    marginHorizontal: Spacing.base,
+    borderRadius: Radius.lg,
+    padding: Spacing.base,
     borderWidth: 1,
-    borderColor: '#EFEFEF',
+    borderColor: Colors.borderLight,
+    ...Shadow.card,
   },
   statsCounterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
-  statsCounterValue: { fontSize: 18, fontWeight: 'bold', color: '#1B2A6B' },
-  statsCounterLabel: { fontSize: 14, fontWeight: 'bold', color: '#333', fontFamily: 'Cairo' },
+  statsCounterValue: { fontSize: 18, fontWeight: 'bold', color: Colors.navyMid },
+  statsCounterLabel: { fontSize: 14, fontWeight: 'bold', color: Colors.textBody, fontFamily: 'Cairo' },
   progressBarBackground: {
     height: 8,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 4,
+    backgroundColor: Colors.borderLight,
+    borderRadius: Radius.sm,
     overflow: 'hidden',
-    marginBottom: 10,
+    marginBottom: Spacing.sm,
   },
-  progressBarFill: { height: '100%', backgroundColor: '#F26522' },
+  progressBarFill: { height: '100%', backgroundColor: Colors.primary },
   financeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -378,65 +380,66 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   financeValue: { fontSize: 15, fontWeight: 'bold' },
-  financeLabel: { fontSize: 13, color: '#666666', fontFamily: 'Tajawal' },
+  financeLabel: { fontSize: 13, color: Colors.textMuted, fontFamily: 'Tajawal' },
 
   // Payment info card
   infoCard: {
-    backgroundColor: '#E8F0FE',
-    marginHorizontal: 15,
-    padding: 15,
-    borderRadius: 12,
+    backgroundColor: Colors.infoBg,
+    marginHorizontal: Spacing.base,
+    padding: Spacing.base,
+    borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: '#1A73E8',
+    borderColor: Colors.info,
   },
-  infoText: { fontSize: 13, color: '#1B2A6B', textAlign: 'right', fontFamily: 'Tajawal' },
+  infoText: { fontSize: 13, color: Colors.navyMid, textAlign: 'right', fontFamily: 'Tajawal' },
   ripText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#F26522',
+    color: Colors.primary,
     textAlign: 'center',
-    marginVertical: 8,
+    marginVertical: Spacing.sm,
   },
-  infoSubtext: { fontSize: 11, color: '#555555', textAlign: 'right', fontFamily: 'Tajawal' },
+  infoSubtext: { fontSize: 11, color: Colors.textSecondary, textAlign: 'right', fontFamily: 'Tajawal' },
 
   // Active order card
   orderCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 15,
-    borderRadius: 14,
+    backgroundColor: Colors.bgCard,
+    marginHorizontal: Spacing.base,
+    borderRadius: Radius.lg,
     padding: 18,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.border,
+    ...Shadow.card,
   },
   orderHeaderRow: {
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: Spacing.base,
   },
   orderStatusBadge: {
-    backgroundColor: '#FFF4E5',
-    color: '#B76E00',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 20,
+    backgroundColor: Colors.warningBg,
+    color: Colors.warning,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: Radius.full,
     fontSize: 11,
     fontWeight: 'bold',
     fontFamily: 'Cairo',
     overflow: 'hidden',
   },
-  orderIdText: { fontSize: 13, color: '#718096', fontWeight: 'bold', fontFamily: 'Tajawal' },
+  orderIdText: { fontSize: 13, color: Colors.textMuted, fontWeight: 'bold', fontFamily: 'Tajawal' },
   orderInfoLabel: {
     fontSize: 12,
-    color: '#718096',
+    color: Colors.textMuted,
     textAlign: 'right',
-    marginTop: 10,
+    marginTop: Spacing.sm,
     fontFamily: 'Tajawal',
   },
   orderInfoValue: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#111A44',
+    color: Colors.navyDark,
     textAlign: 'right',
     marginTop: 2,
     fontFamily: 'Cairo',
@@ -445,33 +448,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: Spacing.sm,
   },
-  financePrice: { fontSize: 15, fontWeight: 'bold', color: '#111A44', fontFamily: 'Tajawal' },
-  orderFinanceLabel: { fontSize: 12, color: '#4A5568', fontFamily: 'Tajawal' },
+  financePrice: { fontSize: 15, fontWeight: 'bold', color: Colors.navyDark, fontFamily: 'Tajawal' },
+  orderFinanceLabel: { fontSize: 12, color: Colors.textSecondary, fontFamily: 'Tajawal' },
   completeButton: {
-    backgroundColor: '#137333',
-    paddingVertical: 14,
-    borderRadius: 12,
+    backgroundColor: Colors.success,
+    paddingVertical: Spacing.base,
+    borderRadius: Radius.lg,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: Spacing.lg,
+    ...Shadow.medium,
   },
-  completeButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: 'bold', fontFamily: 'Cairo' },
+  completeButtonText: { color: Colors.white, fontSize: 13, fontWeight: 'bold', fontFamily: 'Cairo' },
 
   // Empty order state
   emptyCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 15,
-    borderRadius: 12,
+    backgroundColor: Colors.bgCard,
+    marginHorizontal: Spacing.base,
+    borderRadius: Radius.lg,
     padding: 25,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.border,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: Spacing.sm,
+    ...Shadow.card,
   },
   emptyText: {
     fontSize: 12,
-    color: '#718096',
+    color: Colors.textMuted,
     textAlign: 'center',
     fontFamily: 'Tajawal',
     lineHeight: 22,
@@ -480,7 +485,7 @@ const styles = StyleSheet.create({
   // Suspended full-screen
   suspendedContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     padding: 25,
     justifyContent: 'center',
     alignItems: 'center',
@@ -488,59 +493,59 @@ const styles = StyleSheet.create({
   suspendedTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#C5221F',
+    color: Colors.danger,
     fontFamily: 'Cairo',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: Spacing.sm,
   },
   suspendedText: {
     fontSize: 13,
-    color: '#4A5568',
+    color: Colors.textSecondary,
     textAlign: 'center',
     fontFamily: 'Tajawal',
     lineHeight: 24,
-    marginBottom: 20,
+    marginBottom: Spacing.lg,
   },
   debtReportCard: {
-    backgroundColor: '#FCE8E6',
-    padding: 15,
-    borderRadius: 12,
+    backgroundColor: Colors.dangerBg,
+    padding: Spacing.base,
+    borderRadius: Radius.lg,
     width: '100%',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: Spacing.lg,
     borderWidth: 1,
     borderColor: '#F8D7DA',
   },
-  debtReportLabel: { fontSize: 13, color: '#C5221F', fontFamily: 'Tajawal' },
+  debtReportLabel: { fontSize: 13, color: Colors.danger, fontFamily: 'Tajawal' },
   debtReportValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#C5221F',
-    marginTop: 5,
+    color: Colors.danger,
+    marginTop: Spacing.xs,
     fontFamily: 'Tajawal',
   },
   instructionsText: {
     fontSize: 13,
-    color: '#4A5568',
+    color: Colors.textSecondary,
     textAlign: 'center',
     fontFamily: 'Tajawal',
-    marginBottom: 15,
+    marginBottom: Spacing.base,
     lineHeight: 22,
   },
   ccpCard: {
-    backgroundColor: '#111A44',
-    padding: 20,
-    borderRadius: 14,
+    backgroundColor: Colors.navyDark,
+    padding: Spacing.lg,
+    borderRadius: Radius.lg,
     width: '100%',
     alignItems: 'center',
   },
   ccpNumber: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: Colors.white,
     letterSpacing: 0.5,
     fontFamily: 'Tajawal',
   },
-  ccpOwner: { fontSize: 12, color: '#F26522', fontFamily: 'Cairo', marginTop: 8 },
-  footerNote: { fontSize: 10, color: '#A0AEC0', fontFamily: 'Tajawal', marginTop: 40 },
+  ccpOwner: { fontSize: 12, color: Colors.primary, fontFamily: 'Cairo', marginTop: Spacing.sm },
+  footerNote: { fontSize: 10, color: Colors.textOnDarkMuted, fontFamily: 'Tajawal', marginTop: 40 },
 });

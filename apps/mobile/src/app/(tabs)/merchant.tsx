@@ -34,6 +34,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../supabase';
+import { Colors, Spacing, Radius, Shadow } from '../../constants/theme';
 
 export default function MerchantDashboard() {
   // ── Auth / store identity ────────────────────────────────────────────────
@@ -265,7 +266,7 @@ export default function MerchantDashboard() {
   if (profileLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#F26522" />
+        <ActivityIndicator size="large" color={Colors.primary} />
       </View>
     );
   }
@@ -308,8 +309,8 @@ export default function MerchantDashboard() {
         </View>
         <View style={styles.divider} />
         <View style={styles.financeRow}>
-          <Text style={[styles.financeValue, { color: '#137333', fontSize: 16 }]}>{netMerchantProfit.toFixed(0)} د.ج</Text>
-          <Text style={[styles.financeLabel, { fontWeight: 'bold', color: '#111A44' }]}>أرباحك الصافية الحقيقية:</Text>
+          <Text style={[styles.financeValue, { color: Colors.success, fontSize: 16 }]}>{netMerchantProfit.toFixed(0)} د.ج</Text>
+          <Text style={[styles.financeLabel, { fontWeight: 'bold', color: Colors.textPrimary }]}>أرباحك الصافية الحقيقية:</Text>
         </View>
       </View>
 
@@ -352,12 +353,12 @@ export default function MerchantDashboard() {
           </TouchableOpacity>
         )}
         <TouchableOpacity style={styles.photoUploadBtn} onPress={pickProductPhoto}>
-          <Text style={{ color: '#FFF', fontFamily: 'Tajawal' }}>🖼️ رفع صورة منتج من ألبوم الهاتف</Text>
+          <Text style={{ color: Colors.white, fontFamily: 'Tajawal' }}>🖼️ رفع صورة منتج من ألبوم الهاتف</Text>
         </TouchableOpacity>
         {localPhoto && <Image source={{ uri: localPhoto }} style={styles.previewImage} />}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 15 }}>
-          <Text style={{ color: '#F26522', fontFamily: 'Tajawal' }}>{50 - description.length} حرف متبقي</Text>
-          <Text style={{ fontSize: 12, fontFamily: 'Tajawal' }}>الوصف القصير (أقصى حد 50 حرف):</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.base }}>
+          <Text style={{ color: Colors.primary, fontFamily: 'Tajawal' }}>{50 - description.length} حرف متبقي</Text>
+          <Text style={{ fontSize: 12, fontFamily: 'Tajawal', color: Colors.textSecondary }}>الوصف القصير (أقصى حد 50 حرف):</Text>
         </View>
         <TextInput
           style={[styles.input, { minHeight: 50 }]}
@@ -369,7 +370,7 @@ export default function MerchantDashboard() {
         />
         <TouchableOpacity style={styles.submitBtn} onPress={handlePublishContent} disabled={publishing}>
           {publishing
-            ? <ActivityIndicator color="#FFF" />
+            ? <ActivityIndicator color={Colors.white} />
             : <Text style={styles.submitBtnText}>🚀 نشر العرض ديركت</Text>}
         </TouchableOpacity>
       </View>
@@ -431,7 +432,7 @@ export default function MerchantDashboard() {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>💬 تعليقات الزبائن وفرسان التوصيل</Text>
             {commentsLoading ? (
-              <ActivityIndicator size="small" color="#F26522" style={{ marginTop: 20 }} />
+              <ActivityIndicator size="small" color={Colors.primary} style={{ marginTop: Spacing.lg }} />
             ) : comments.length === 0 ? (
               <Text style={styles.noCommentsText}>لا توجد أي تعليقات منشورة على هذا العرض حتى الآن.</Text>
             ) : (
@@ -460,7 +461,7 @@ export default function MerchantDashboard() {
               />
             )}
             <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeModalBtn}>
-              <Text style={{ textAlign: 'center', color: '#718096', fontWeight: 'bold', fontFamily: 'Tajawal' }}>
+              <Text style={{ textAlign: 'center', color: Colors.textMuted, fontWeight: 'bold', fontFamily: 'Tajawal' }}>
                 إغلاق النافذة ❌
               </Text>
             </TouchableOpacity>
@@ -473,146 +474,150 @@ export default function MerchantDashboard() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 0, backgroundColor: '#F4F6F9' },
+  container: { padding: 0, backgroundColor: Colors.bgScreen },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // Header
   header: {
-    backgroundColor: '#1B2A6B',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
+    backgroundColor: Colors.navyMid,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.headerTop,
+    paddingBottom: Spacing.lg,
     alignItems: 'flex-end',
+    borderBottomWidth: 3,
+    borderColor: Colors.primary,
   },
-  headerTitle: { fontSize: 21, fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'Cairo' },
-  headerStoreName: { fontSize: 13, color: 'rgba(255,255,255,0.8)', fontFamily: 'Tajawal', marginTop: 4 },
+  headerTitle: { fontSize: 21, fontWeight: 'bold', color: Colors.white, fontFamily: 'Cairo' },
+  headerStoreName: { fontSize: 13, color: 'rgba(255,255,255,0.8)', fontFamily: 'Tajawal', marginTop: Spacing.xs },
 
   // Layout helpers
   sectionTitle: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#1B2A6B',
-    marginHorizontal: 15,
-    marginTop: 22,
-    marginBottom: 10,
+    color: Colors.navyMid,
+    marginHorizontal: Spacing.base,
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.md,
     textAlign: 'right',
     fontFamily: 'Cairo',
   },
-  divider: { height: 1, backgroundColor: '#F0F0F0', marginVertical: 10 },
+  divider: { height: 1, backgroundColor: Colors.borderLight, marginVertical: Spacing.sm },
 
   // Policy banner
-  policyBanner: { margin: 15, borderRadius: 14, padding: 15, borderWidth: 1 },
-  promoBanner: { backgroundColor: '#E6F4EA', borderColor: '#137333' },
-  activePolicyBanner: { backgroundColor: '#FEF7E0', borderColor: '#B06000' },
-  policyTitle: { fontSize: 15, fontWeight: 'bold', fontFamily: 'Cairo', textAlign: 'right', marginBottom: 5, color: '#111A44' },
-  policyText: { fontSize: 12, color: '#444444', fontFamily: 'Tajawal', textAlign: 'right', lineHeight: 18 },
-  togglePolicyButton: { backgroundColor: '#FFFFFF', padding: 8, borderRadius: 8, alignItems: 'center', marginTop: 10, borderWidth: 1, borderColor: '#CBD5E0' },
-  togglePolicyText: { fontSize: 11, fontWeight: 'bold', color: '#1B2A6B', fontFamily: 'Tajawal' },
+  policyBanner: { margin: Spacing.base, borderRadius: Radius.lg, padding: Spacing.base, borderWidth: 1 },
+  promoBanner: { backgroundColor: Colors.successBg, borderColor: Colors.success },
+  activePolicyBanner: { backgroundColor: Colors.warningBg, borderColor: Colors.warning },
+  policyTitle: { fontSize: 15, fontWeight: 'bold', fontFamily: 'Cairo', textAlign: 'right', marginBottom: Spacing.xs, color: Colors.textPrimary },
+  policyText: { fontSize: 12, color: Colors.textBody, fontFamily: 'Tajawal', textAlign: 'right', lineHeight: 18 },
+  togglePolicyButton: { backgroundColor: Colors.white, padding: Spacing.sm, borderRadius: Radius.sm, alignItems: 'center', marginTop: Spacing.sm, borderWidth: 1, borderColor: Colors.border },
+  togglePolicyText: { fontSize: 11, fontWeight: 'bold', color: Colors.navyMid, fontFamily: 'Tajawal' },
 
   // Financial stats
-  statsCard: { backgroundColor: '#FFFFFF', marginHorizontal: 15, borderRadius: 14, padding: 15, borderWidth: 1, borderColor: '#EFEFEF' },
+  statsCard: { backgroundColor: Colors.bgCard, marginHorizontal: Spacing.base, borderRadius: Radius.lg, padding: Spacing.base, borderWidth: 1, borderColor: Colors.borderLight, ...Shadow.card },
   financeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   financeValue: { fontSize: 14, fontWeight: 'bold', fontFamily: 'Cairo' },
-  financeLabel: { fontSize: 13, color: '#666666', fontFamily: 'Tajawal' },
+  financeLabel: { fontSize: 13, color: Colors.textMuted, fontFamily: 'Tajawal' },
 
   // Store profile card
   profileCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 15,
-    borderRadius: 16,
-    padding: 15,
+    backgroundColor: Colors.bgCard,
+    marginHorizontal: Spacing.base,
+    borderRadius: Radius.xl,
+    padding: Spacing.base,
     flexDirection: 'row-reverse',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.border,
+    ...Shadow.card,
   },
   logoContainer: {
-    width: 60, height: 60, borderRadius: 30,
-    borderWidth: 2, borderColor: '#F26522',
+    width: 60, height: 60, borderRadius: Radius.full,
+    borderWidth: 2, borderColor: Colors.primary,
     justifyContent: 'center', alignItems: 'center', overflow: 'hidden',
   },
   logoImage: { width: '100%', height: '100%' },
   profileInput: {
-    flex: 1, marginRight: 15,
-    borderWidth: 1, borderColor: '#CBD5E0', borderRadius: 8,
-    padding: 10, backgroundColor: '#F8FAFC', fontFamily: 'Tajawal',
+    flex: 1, marginRight: Spacing.base,
+    borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.sm,
+    padding: Spacing.sm, backgroundColor: Colors.bgSubtle, fontFamily: 'Tajawal',
   },
 
   // Generic card
   card: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 15,
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: Colors.bgCard,
+    marginHorizontal: Spacing.base,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: Colors.border,
+    ...Shadow.card,
   },
 
   // Post publishing
   input: {
-    borderWidth: 1, borderColor: '#CBD5E0', borderRadius: 8,
-    padding: 12, textAlign: 'right', backgroundColor: '#F8FAFC',
-    marginTop: 8, fontFamily: 'Tajawal',
+    borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.sm,
+    padding: Spacing.md, textAlign: 'right', backgroundColor: Colors.bgSubtle,
+    marginTop: Spacing.sm, fontFamily: 'Tajawal',
   },
-  checkboxRow: { flexDirection: 'row-reverse', alignItems: 'center', padding: 10, backgroundColor: '#FFF5F5', borderRadius: 8, marginTop: 8 },
-  checkboxActive: { backgroundColor: '#F0FFF4' },
+  checkboxRow: { flexDirection: 'row-reverse', alignItems: 'center', padding: Spacing.sm, backgroundColor: Colors.dangerBg, borderRadius: Radius.sm, marginTop: Spacing.sm },
+  checkboxActive: { backgroundColor: Colors.successBg },
   checkboxText: { fontSize: 10, flex: 1, textAlign: 'right', fontFamily: 'Tajawal' },
-  photoUploadBtn: { backgroundColor: '#111A44', padding: 12, borderRadius: 10, alignItems: 'center', marginTop: 15 },
-  previewImage: { width: '100%', height: 150, borderRadius: 8, marginTop: 10, resizeMode: 'cover' },
-  submitBtn: { backgroundColor: '#F26522', paddingVertical: 14, borderRadius: 10, alignItems: 'center', marginTop: 20 },
-  submitBtnText: { color: '#FFFFFF', fontWeight: 'bold', fontFamily: 'Cairo' },
+  photoUploadBtn: { backgroundColor: Colors.navyDark, padding: Spacing.md, borderRadius: Radius.md, alignItems: 'center', marginTop: Spacing.base },
+  previewImage: { width: '100%', height: 150, borderRadius: Radius.sm, marginTop: Spacing.sm, resizeMode: 'cover' },
+  submitBtn: { backgroundColor: Colors.primary, paddingVertical: Spacing.base, borderRadius: Radius.md, alignItems: 'center', marginTop: Spacing.lg, ...Shadow.primaryBtn },
+  submitBtnText: { color: Colors.white, fontWeight: 'bold', fontFamily: 'Cairo' },
 
   // Promo management
   smallInput: {
-    borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 8,
-    padding: 10, textAlign: 'right', fontSize: 13,
-    fontFamily: 'Tajawal', backgroundColor: '#FAFAFA', marginBottom: 10,
+    borderWidth: 1, borderColor: Colors.borderLight, borderRadius: Radius.sm,
+    padding: Spacing.sm, textAlign: 'right', fontSize: 13,
+    fontFamily: 'Tajawal', backgroundColor: Colors.bgSubtle, marginBottom: Spacing.sm,
   },
-  addPromoButton: { backgroundColor: '#F26522', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginTop: 2 },
-  addPromoButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: 'bold', fontFamily: 'Cairo' },
+  addPromoButton: { backgroundColor: Colors.primary, paddingVertical: Spacing.md, borderRadius: Radius.sm, alignItems: 'center', marginTop: 2, ...Shadow.primaryBtn },
+  addPromoButtonText: { color: Colors.white, fontSize: 13, fontWeight: 'bold', fontFamily: 'Cairo' },
   promoItemRow: {
     flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between',
-    marginTop: 10, backgroundColor: '#FFF5F0', padding: 10, borderRadius: 8,
+    marginTop: Spacing.sm, backgroundColor: Colors.primaryLight, padding: Spacing.sm, borderRadius: Radius.sm,
   },
-  promoItemName: { fontSize: 13, color: '#1B2A6B', fontFamily: 'Tajawal', flex: 1, textAlign: 'right' },
-  oldPriceText: { fontSize: 11, color: '#999', textDecorationLine: 'line-through', marginHorizontal: 10 },
-  promoPriceBadge: { fontSize: 13, fontWeight: 'bold', color: '#F26522', fontFamily: 'Cairo' },
+  promoItemName: { fontSize: 13, color: Colors.navyMid, fontFamily: 'Tajawal', flex: 1, textAlign: 'right' },
+  oldPriceText: { fontSize: 11, color: Colors.textMuted, textDecorationLine: 'line-through', marginHorizontal: Spacing.sm },
+  promoPriceBadge: { fontSize: 13, fontWeight: 'bold', color: Colors.primary, fontFamily: 'Cairo' },
 
   // Posts list
   postItemRow: {
     flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#E2E8F0',
+    paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  postInfo: { alignItems: 'flex-end', flex: 1, marginLeft: 10 },
-  postDescText: { fontSize: 13, fontWeight: '500', color: '#2D3748', fontFamily: 'Tajawal' },
-  mediaTypeBadge: { fontSize: 10, color: '#718096', marginTop: 2, fontFamily: 'Tajawal' },
+  postInfo: { alignItems: 'flex-end', flex: 1, marginLeft: Spacing.sm },
+  postDescText: { fontSize: 13, fontWeight: '500', color: Colors.textBody, fontFamily: 'Tajawal' },
+  mediaTypeBadge: { fontSize: 10, color: Colors.textMuted, marginTop: 2, fontFamily: 'Tajawal' },
   commentCheckBtn: {
-    backgroundColor: '#FAFBFD', borderWidth: 1, borderColor: '#CBD5E0',
-    paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8,
+    backgroundColor: Colors.bgScreen, borderWidth: 1, borderColor: Colors.border,
+    paddingVertical: 6, paddingHorizontal: Spacing.md, borderRadius: Radius.sm,
   },
-  commentCheckBtnText: { fontSize: 11, color: '#4A5568', fontWeight: 'bold', fontFamily: 'Tajawal' },
-  noPostsText: { textAlign: 'center', color: '#718096', fontSize: 12, paddingVertical: 15, fontFamily: 'Tajawal' },
+  commentCheckBtnText: { fontSize: 11, color: Colors.textSecondary, fontWeight: 'bold', fontFamily: 'Tajawal' },
+  noPostsText: { textAlign: 'center', color: Colors.textMuted, fontSize: 12, paddingVertical: Spacing.base, fontFamily: 'Tajawal' },
 
   // Comment modal
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalContent: { backgroundColor: '#FFF', height: '58%', padding: 20, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
-  modalTitle: { fontSize: 15, fontWeight: 'bold', textAlign: 'center', marginBottom: 15, color: '#1B2A6B', fontFamily: 'Cairo' },
+  modalContent: { backgroundColor: Colors.white, height: '58%', padding: Spacing.lg, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl },
+  modalTitle: { fontSize: 15, fontWeight: 'bold', textAlign: 'center', marginBottom: Spacing.base, color: Colors.navyMid, fontFamily: 'Cairo' },
   commentContainer: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EDF2F7',
+    paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  commentBodyArea: { flex: 1, alignItems: 'flex-end', marginLeft: 15 },
-  commentHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  commenterName: { fontSize: 13, fontWeight: 'bold', color: '#1A202C', marginRight: 8, fontFamily: 'Tajawal' },
-  commentContentText: { fontSize: 13, color: '#4A5568', textAlign: 'right', fontFamily: 'Tajawal' },
+  commentBodyArea: { flex: 1, alignItems: 'flex-end', marginLeft: Spacing.base },
+  commentHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.xs },
+  commenterName: { fontSize: 13, fontWeight: 'bold', color: Colors.textBody, marginRight: Spacing.sm, fontFamily: 'Tajawal' },
+  commentContentText: { fontSize: 13, color: Colors.textSecondary, textAlign: 'right', fontFamily: 'Tajawal' },
   roleBadge: {
     fontSize: 9, paddingHorizontal: 6, paddingVertical: 2,
-    borderRadius: 6, overflow: 'hidden', fontWeight: 'bold', fontFamily: 'Tajawal',
+    borderRadius: Radius.sm, overflow: 'hidden', fontWeight: 'bold', fontFamily: 'Tajawal',
   },
-  customerBadge: { backgroundColor: '#EBF8FF', color: '#2B6CB0' },
-  driverBadge: { backgroundColor: '#FEFCBF', color: '#744210' },
-  deleteCommentBtn: { backgroundColor: '#FFF5F5', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 6 },
-  deleteText: { color: '#E53E3E', fontSize: 11, fontWeight: 'bold', fontFamily: 'Tajawal' },
-  noCommentsText: { textAlign: 'center', color: '#718096', fontSize: 13, marginTop: 40, fontFamily: 'Tajawal' },
-  closeModalBtn: { marginTop: 15, paddingVertical: 10 },
+  customerBadge: { backgroundColor: Colors.customerBadgeBg, color: Colors.customerBadgeText },
+  driverBadge: { backgroundColor: Colors.driverBadgeBg, color: Colors.driverBadgeText },
+  deleteCommentBtn: { backgroundColor: Colors.dangerBg, paddingVertical: 6, paddingHorizontal: Spacing.sm, borderRadius: Radius.sm },
+  deleteText: { color: Colors.danger, fontSize: 11, fontWeight: 'bold', fontFamily: 'Tajawal' },
+  noCommentsText: { textAlign: 'center', color: Colors.textMuted, fontSize: 13, marginTop: 40, fontFamily: 'Tajawal' },
+  closeModalBtn: { marginTop: Spacing.base, paddingVertical: Spacing.sm },
 });

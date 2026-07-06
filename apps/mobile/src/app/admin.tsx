@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Alert,
 import { Redirect } from 'expo-router';
 import { supabase } from '../supabase';
 import { useAuth } from '../context/AuthContext';
+import { Colors, Spacing, Radius, Shadow } from '../constants/theme';
 
 interface Store {
   id: string;
@@ -174,7 +175,7 @@ export default function AdminDashboard() {
   if (authLoading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#F26522" />
+        <ActivityIndicator size="large" color={Colors.primary} />
       </View>
     );
   }
@@ -188,8 +189,8 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#F26522" />
-        <Text style={{ marginTop: 10, fontFamily: 'Cairo', color: '#111A44' }}>جاري الاتصال الآمن بالسيرفر السحابي...</Text>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={{ marginTop: Spacing.sm, fontFamily: 'Cairo', color: Colors.navyDark }}>جاري الاتصال الآمن بالسيرفر السحابي...</Text>
       </View>
     );
   }
@@ -204,7 +205,7 @@ export default function AdminDashboard() {
       <ScrollView 
         showsVerticalScrollIndicator={false} 
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={['#F26522']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[Colors.primary]} />}
       >
         
         {/* قسم تغذية السوق مسبقاً وبناء عينات المتاجر المفعلة فورا */}
@@ -227,7 +228,7 @@ export default function AdminDashboard() {
           <TextInput style={styles.input} placeholder="مثال: حي الضلعة، وسط المدينة..." value={newStoreZone} onChangeText={setNewStoreZone} />
 
           <TouchableOpacity style={styles.insertButton} onPress={handleAddStoreDirectly} disabled={isInserting}>
-            {isInserting ? <ActivityIndicator color="#FFF" /> : <Text style={styles.insertButtonText}>🚀 حقن ونشر المتجر حياً في السيرفر</Text>}
+            {isInserting ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.insertButtonText}>🚀 حقن ونشر المتجر حياً في السيرفر</Text>}
           </TouchableOpacity>
         </View>
 
@@ -289,46 +290,46 @@ export default function AdminDashboard() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFBFD' },
-  header: { backgroundColor: '#111A44', padding: 20, alignItems: 'flex-end', borderBottomWidth: 3, borderColor: '#F26522', paddingTop: 45 },
-  headerTitle: { fontSize: 17, fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'Cairo' },
-  headerSubtitle: { fontSize: 10, color: '#A0AEC0', fontFamily: 'Tajawal', marginTop: 4 },
+  container: { flex: 1, backgroundColor: Colors.bgScreen },
+  header: { backgroundColor: Colors.navyDark, padding: Spacing.lg, alignItems: 'flex-end', borderBottomWidth: 3, borderColor: Colors.primary, paddingTop: Spacing.headerTop },
+  headerTitle: { fontSize: 17, fontWeight: 'bold', color: Colors.white, fontFamily: 'Cairo' },
+  headerSubtitle: { fontSize: 10, color: Colors.textOnDarkMuted, fontFamily: 'Tajawal', marginTop: Spacing.xs },
   scrollContent: { paddingBottom: 40 },
-  sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#111A44', marginHorizontal: 15, marginTop: 25, marginBottom: 10, textAlign: 'right', fontFamily: 'Cairo' },
-  adminFormCard: { backgroundColor: '#FFFFFF', marginHorizontal: 15, marginTop: 15, borderRadius: 14, padding: 15, borderWidth: 1, borderColor: '#E2E8F0' },
-  sectionFormTitle: { fontSize: 13, fontWeight: 'bold', color: '#1B2A6B', textAlign: 'right', fontFamily: 'Cairo', marginBottom: 15, borderBottomWidth: 1, borderBottomColor: '#EDF2F7', paddingBottom: 8 },
-  inputLabel: { fontSize: 12, fontWeight: 'bold', color: '#4A5568', textAlign: 'right', marginBottom: 6, fontFamily: 'Cairo' },
-  input: { borderWidth: 1, borderColor: '#CBD5E0', borderRadius: 8, padding: 12, textAlign: 'right', fontSize: 13, fontFamily: 'Tajawal', backgroundColor: '#F8FAFC', marginBottom: 15 },
-  categoryPickerRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 15, gap: 5 },
-  pickerButton: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 6, borderWidth: 1, borderColor: '#CBD5E0', backgroundColor: '#FFF' },
-  activePickerButton: { borderColor: '#F26522', backgroundColor: 'rgba(242, 101, 34, 0.08)' },
-  pickerButtonText: { fontSize: 11, color: '#4A5568', fontFamily: 'Tajawal' },
-  activePickerButtonText: { color: '#F26522', fontWeight: 'bold' },
-  insertButton: { backgroundColor: '#F26522', paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
-  insertButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'Cairo' },
-  
+  sectionTitle: { fontSize: 14, fontWeight: 'bold', color: Colors.navyDark, marginHorizontal: Spacing.base, marginTop: Spacing.xl, marginBottom: Spacing.md, textAlign: 'right', fontFamily: 'Cairo' },
+  adminFormCard: { backgroundColor: Colors.bgCard, marginHorizontal: Spacing.base, marginTop: Spacing.base, borderRadius: Radius.lg, padding: Spacing.base, borderWidth: 1, borderColor: Colors.border, ...Shadow.card },
+  sectionFormTitle: { fontSize: 13, fontWeight: 'bold', color: Colors.navyMid, textAlign: 'right', fontFamily: 'Cairo', marginBottom: Spacing.base, borderBottomWidth: 1, borderBottomColor: Colors.border, paddingBottom: Spacing.sm },
+  inputLabel: { fontSize: 12, fontWeight: 'bold', color: Colors.textSecondary, textAlign: 'right', marginBottom: 6, fontFamily: 'Cairo' },
+  input: { borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.sm, padding: Spacing.md, textAlign: 'right', fontSize: 13, fontFamily: 'Tajawal', backgroundColor: Colors.bgSubtle, marginBottom: Spacing.base },
+  categoryPickerRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: Spacing.base, gap: 5 },
+  pickerButton: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, borderRadius: Radius.sm, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },
+  activePickerButton: { borderColor: Colors.primary, backgroundColor: Colors.primaryMid },
+  pickerButtonText: { fontSize: 11, color: Colors.textSecondary, fontFamily: 'Tajawal' },
+  activePickerButtonText: { color: Colors.primary, fontWeight: 'bold' },
+  insertButton: { backgroundColor: Colors.primary, paddingVertical: Spacing.base, borderRadius: Radius.md, alignItems: 'center', ...Shadow.primaryBtn },
+  insertButtonText: { color: Colors.white, fontSize: 14, fontWeight: 'bold', fontFamily: 'Cairo' },
+
   // تنسيقات أسطر إدارة وصلاحيات المحلات
-  dataRowCard: { backgroundColor: '#FFFFFF', marginHorizontal: 15, marginBottom: 10, borderRadius: 12, padding: 15, borderWidth: 1, borderColor: '#E2E8F0', flexDirection: 'column', alignItems: 'stretch' },
+  dataRowCard: { backgroundColor: Colors.bgCard, marginHorizontal: Spacing.base, marginBottom: Spacing.sm, borderRadius: Radius.lg, padding: Spacing.base, borderWidth: 1, borderColor: Colors.border, flexDirection: 'column', alignItems: 'stretch', ...Shadow.card },
   storeMainMeta: { alignItems: 'flex-end', width: '100%' },
-  dataRowText: { fontSize: 14, color: '#2D3748', fontFamily: 'Tajawal' },
-  dataRowSubtext: { fontSize: 11, color: '#718096', fontFamily: 'Tajawal', marginTop: 2 },
-  boldText: { fontWeight: 'bold', color: '#111A44' },
-  storeAdminActions: { flexDirection: 'row', justifyContent: 'flex-start', marginTop: 12, borderTopWidth: 1, borderTopColor: '#EDF2F7', paddingTop: 10 },
-  actionToggleBtn: { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 6, marginRight: 8 },
+  dataRowText: { fontSize: 14, color: Colors.textBody, fontFamily: 'Tajawal' },
+  dataRowSubtext: { fontSize: 11, color: Colors.textMuted, fontFamily: 'Tajawal', marginTop: 2 },
+  boldText: { fontWeight: 'bold', color: Colors.navyDark },
+  storeAdminActions: { flexDirection: 'row', justifyContent: 'flex-start', marginTop: Spacing.md, borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: Spacing.sm },
+  actionToggleBtn: { paddingVertical: Spacing.xs, paddingHorizontal: Spacing.md, borderRadius: Radius.sm, marginRight: Spacing.sm },
   approveToggleBtn: { backgroundColor: '#E6FFFA', borderWidth: 1, borderColor: '#319795' },
-  suspendToggleBtn: { backgroundColor: '#FFF5F5', borderWidth: 1, borderColor: '#E53E3E' },
-  actionDeleteBtn: { backgroundColor: '#EDF2F7', paddingVertical: 5, paddingHorizontal: 12, borderRadius: 6, borderWidth: 1, borderColor: '#CBD5E0' },
-  actionBtnText: { fontSize: 11, fontWeight: 'bold', fontFamily: 'Tajawal', color: '#4A5568' },
+  suspendToggleBtn: { backgroundColor: Colors.dangerBg, borderWidth: 1, borderColor: Colors.danger },
+  actionDeleteBtn: { backgroundColor: Colors.border, paddingVertical: Spacing.xs, paddingHorizontal: Spacing.md, borderRadius: Radius.sm, borderWidth: 1, borderColor: Colors.border },
+  actionBtnText: { fontSize: 11, fontWeight: 'bold', fontFamily: 'Tajawal', color: Colors.textSecondary },
 
   // كروت الرقابة المالية لفرسان التوصيل
-  driverControlCard: { backgroundColor: '#FFFFFF', marginHorizontal: 15, marginBottom: 12, borderRadius: 12, padding: 15, borderWidth: 1, borderColor: '#E2E8F0' },
-  driverHeader: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#EDF2F7', paddingBottom: 8 },
-  driverName: { fontSize: 14, fontWeight: 'bold', color: '#111A44', fontFamily: 'Cairo' },
-  statusBadge: { backgroundColor: '#E6F4EA', color: '#137333', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12, fontSize: 11, fontWeight: 'bold', fontFamily: 'Cairo', overflow: 'hidden' },
-  statusSuspended: { backgroundColor: '#FCE8E6', color: '#C5221F' },
-  driverTripsCount: { fontSize: 13, color: '#4A5568', textAlign: 'right', marginTop: 8, fontFamily: 'Tajawal' },
-  driverDebt: { fontSize: 13, color: '#F26522', fontWeight: 'bold', textAlign: 'right', marginTop: 2, fontFamily: 'Tajawal' },
-  resetCounterButton: { backgroundColor: '#137333', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginTop: 12 },
-  resetCounterButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: 'bold', fontFamily: 'Cairo' },
-  noDataText: { textAlign: 'center', color: '#718096', marginVertical: 15, fontFamily: 'Tajawal', fontSize: 12 }
+  driverControlCard: { backgroundColor: Colors.bgCard, marginHorizontal: Spacing.base, marginBottom: Spacing.md, borderRadius: Radius.lg, padding: Spacing.base, borderWidth: 1, borderColor: Colors.border, ...Shadow.card },
+  driverHeader: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: Colors.border, paddingBottom: Spacing.sm },
+  driverName: { fontSize: 14, fontWeight: 'bold', color: Colors.navyDark, fontFamily: 'Cairo' },
+  statusBadge: { backgroundColor: Colors.successBg, color: Colors.success, paddingVertical: Spacing.xs, paddingHorizontal: Spacing.sm, borderRadius: Radius.lg, fontSize: 11, fontWeight: 'bold', fontFamily: 'Cairo', overflow: 'hidden' },
+  statusSuspended: { backgroundColor: Colors.dangerBg, color: Colors.danger },
+  driverTripsCount: { fontSize: 13, color: Colors.textSecondary, textAlign: 'right', marginTop: Spacing.sm, fontFamily: 'Tajawal' },
+  driverDebt: { fontSize: 13, color: Colors.primary, fontWeight: 'bold', textAlign: 'right', marginTop: 2, fontFamily: 'Tajawal' },
+  resetCounterButton: { backgroundColor: Colors.success, paddingVertical: Spacing.md, borderRadius: Radius.sm, alignItems: 'center', marginTop: Spacing.md, ...Shadow.medium },
+  resetCounterButtonText: { color: Colors.white, fontSize: 13, fontWeight: 'bold', fontFamily: 'Cairo' },
+  noDataText: { textAlign: 'center', color: Colors.textMuted, marginVertical: Spacing.base, fontFamily: 'Tajawal', fontSize: 12 },
 });

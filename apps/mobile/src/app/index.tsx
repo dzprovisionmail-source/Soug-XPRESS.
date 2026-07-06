@@ -283,7 +283,7 @@ export default function RootEntryScreen() {
         }}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { refreshingSet(true); fetchCommercialFeed(); }} colors={['#F26522']} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { refreshingSet(true); fetchCommercialFeed(); }} colors={[Colors.primary]} />}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>🏪 لا توجد عروض ترويجية نشطة حالياً.</Text>
@@ -320,10 +320,10 @@ export default function RootEntryScreen() {
             <View style={styles.inputRow}>
               <TextInput style={styles.commentInput} placeholder="اكتب تعليقك أو استفسارك..." value={newComment} onChangeText={setNewComment} />
               <TouchableOpacity onPress={submitComment} style={[styles.sendBtn, !newComment.trim() && styles.disabledBtn]} disabled={isSending || !newComment.trim()}>
-                {isSending ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={{color:'#FFF', fontWeight:'bold', fontFamily:'Tajawal', fontSize:12}}>إرسال</Text>}
+                {isSending ? <ActivityIndicator color={Colors.white} size="small" /> : <Text style={{color:Colors.white, fontWeight:'bold', fontFamily:'Tajawal', fontSize:12}}>إرسال</Text>}
               </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={() => setModalVisible(false)} style={{marginTop:15}}><Text style={{textAlign:'center', color:'#718096', fontFamily:'Tajawal'}}>إغلاق النافذة ❌</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setModalVisible(false)} style={{marginTop:Spacing.base}}><Text style={{textAlign:'center', color:Colors.textMuted, fontFamily:'Tajawal'}}>إغلاق النافذة ❌</Text></TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -333,61 +333,61 @@ export default function RootEntryScreen() {
 
 const styles = StyleSheet.create({
   // أونبوردينغ ستايلز الأصلية لحسابك مية بالمية
-  onboardingContainer: { flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 60, paddingHorizontal: 20 },
-  logoContainer: { alignItems: 'center', marginTop: 20 },
-  logoText: { fontSize: 26, fontWeight: 'bold', color: '#1B2A6B', fontFamily: 'Cairo' },
+  onboardingContainer: { flex: 1, backgroundColor: Colors.white, alignItems: 'center', justifyContent: 'space-between', paddingVertical: 60, paddingHorizontal: Spacing.lg },
+  logoContainer: { alignItems: 'center', marginTop: Spacing.lg },
+  logoText: { fontSize: 26, fontWeight: 'bold', color: Colors.navyMid, fontFamily: 'Cairo' },
   slide: { alignItems: 'center', width: width - 40 },
-  slideIcon: { fontSize: 90, marginBottom: 20 },
-  slideTitle: { fontSize: 28, fontWeight: 'bold', color: '#1B2A6B', textAlign: 'center', marginBottom: 15, fontFamily: 'Cairo' },
-  slideDescription: { fontSize: 16, color: '#666666', textAlign: 'center', lineHeight: 26, fontFamily: 'Tajawal', paddingHorizontal: 15 },
-  indicatorContainer: { flexDirection: 'row', marginBottom: 20 },
-  indicator: { height: 8, borderRadius: 4, marginHorizontal: 4 },
-  activeIndicator: { width: 24, backgroundColor: '#F26522' },
-  inactiveIndicator: { width: 8, backgroundColor: '#E0E0E0' },
-  orangeButton: { width: '100%', backgroundColor: '#F26522', paddingVertical: 16, borderRadius: 14, alignItems: 'center' },
-  buttonText: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold', fontFamily: 'Cairo' },
+  slideIcon: { fontSize: 90, marginBottom: Spacing.lg },
+  slideTitle: { fontSize: 28, fontWeight: 'bold', color: Colors.navyMid, textAlign: 'center', marginBottom: Spacing.base, fontFamily: 'Cairo' },
+  slideDescription: { fontSize: 16, color: Colors.textMuted, textAlign: 'center', lineHeight: 26, fontFamily: 'Tajawal', paddingHorizontal: Spacing.base },
+  indicatorContainer: { flexDirection: 'row', marginBottom: Spacing.lg },
+  indicator: { height: 8, borderRadius: Radius.sm, marginHorizontal: Spacing.xs },
+  activeIndicator: { width: 24, backgroundColor: Colors.primary },
+  inactiveIndicator: { width: 8, backgroundColor: Colors.borderLight },
+  orangeButton: { width: '100%', backgroundColor: Colors.primary, paddingVertical: 16, borderRadius: Radius.lg, alignItems: 'center', ...Shadow.primaryBtn },
+  buttonText: { color: Colors.white, fontSize: 18, fontWeight: 'bold', fontFamily: 'Cairo' },
 
   // تغذية الميديا ستايلز الحديثة
-  feedContainer: { flex: 1, backgroundColor: '#F7FAFC' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F7FAFC' },
-  headerBar: { backgroundColor: '#FFFFFF', width: '100%', paddingVertical: 12, paddingHorizontal: 15, borderBottomWidth: 1, borderColor: '#E2E8F0', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 40 },
-  authBtn: { borderWidth: 1, borderColor: '#F26522', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  authBtnText: { color: '#F26522', fontSize: 12, fontFamily: 'Cairo', fontWeight: 'bold' },
+  feedContainer: { flex: 1, backgroundColor: Colors.bgScreen },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.bgScreen },
+  headerBar: { backgroundColor: Colors.bgCard, width: '100%', paddingVertical: Spacing.md, paddingHorizontal: Spacing.base, borderBottomWidth: 1, borderColor: Colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 40 },
+  authBtn: { borderWidth: 1, borderColor: Colors.primary, paddingHorizontal: Spacing.md, paddingVertical: 6, borderRadius: Radius.sm },
+  authBtnText: { color: Colors.primary, fontSize: 12, fontFamily: 'Cairo', fontWeight: 'bold' },
   headerMeta: { alignItems: 'flex-end' },
-  headerLogoText: { fontSize: 18, fontWeight: 'bold', color: '#1B2A6B', fontFamily: 'Cairo' },
-  headerSubtitle: { fontSize: 10, color: '#718096', fontFamily: 'Tajawal', marginTop: 1 },
-  listContent: { padding: 12, paddingBottom: 30 },
-  postCard: { backgroundColor: '#FFFFFF', width: '100%', borderRadius: 16, marginBottom: 15, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden' },
-  storeHeaderRow: { flexDirection: 'row', padding: 10, alignItems: 'center', justifyContent: 'flex-end', backgroundColor: '#FAFBFC' },
-  storeMeta: { marginRight: 10, alignItems: 'flex-end' },
-  storeNameText: { fontSize: 13, fontWeight: 'bold', color: '#111A44', fontFamily: 'Cairo' },
-  timeText: { fontSize: 9, color: '#F26522', fontFamily: 'Tajawal', fontWeight: 'bold' },
+  headerLogoText: { fontSize: 18, fontWeight: 'bold', color: Colors.navyMid, fontFamily: 'Cairo' },
+  headerSubtitle: { fontSize: 10, color: Colors.textMuted, fontFamily: 'Tajawal', marginTop: 1 },
+  listContent: { padding: Spacing.md, paddingBottom: 30 },
+  postCard: { backgroundColor: Colors.bgCard, width: '100%', borderRadius: Radius.xl, marginBottom: Spacing.base, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', ...Shadow.card },
+  storeHeaderRow: { flexDirection: 'row', padding: Spacing.sm, alignItems: 'center', justifyContent: 'flex-end', backgroundColor: Colors.bgSubtle },
+  storeMeta: { marginRight: Spacing.sm, alignItems: 'flex-end' },
+  storeNameText: { fontSize: 13, fontWeight: 'bold', color: Colors.textPrimary, fontFamily: 'Cairo' },
+  timeText: { fontSize: 9, color: Colors.primary, fontFamily: 'Tajawal', fontWeight: 'bold' },
   storeLogoImage: { width: 36, height: 36, borderRadius: 18, resizeMode: 'cover' },
-  storeLogoPlaceholder: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#1B2A6B', justifyContent: 'center', alignItems: 'center' },
-  storeLogoLetter: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+  storeLogoPlaceholder: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.navyMid, justifyContent: 'center', alignItems: 'center' },
+  storeLogoLetter: { color: Colors.white, fontSize: 12, fontWeight: 'bold' },
   postMedia: { width: '100%', height: 230, backgroundColor: '#000' },
   webView: { flex: 1 },
-  descriptionContainer: { padding: 12, backgroundColor: '#FFFFFF' },
-  descriptionText: { fontSize: 12, color: '#2D3748', fontFamily: 'Tajawal', textAlign: 'right', lineHeight: 18 },
+  descriptionContainer: { padding: Spacing.md, backgroundColor: Colors.bgCard },
+  descriptionText: { fontSize: 12, color: Colors.textBody, fontFamily: 'Tajawal', textAlign: 'right', lineHeight: 18 },
   emptyContainer: { alignItems: 'center', marginTop: 60 },
-  emptyText: { fontSize: 13, color: '#4A5568', fontFamily: 'Cairo' },
+  emptyText: { fontSize: 13, color: Colors.textSecondary, fontFamily: 'Cairo' },
 
   // الستايلات المضافة لزر التعليقات والـ Modal المفروز
-  commentBtn: { backgroundColor: '#F8FAFC', padding: 12, alignItems: 'center', borderTopWidth: 1, borderColor: '#E2E8F0' },
-  commentBtnText: { color: '#4A5568', fontSize: 12, fontWeight: 'bold', fontFamily: 'Tajawal' },
+  commentBtn: { backgroundColor: Colors.bgSubtle, padding: Spacing.md, alignItems: 'center', borderTopWidth: 1, borderColor: Colors.border },
+  commentBtnText: { color: Colors.textSecondary, fontSize: 12, fontWeight: 'bold', fontFamily: 'Tajawal' },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalContent: { backgroundColor: '#FFF', height: '58%', padding: 20, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
-  modalTitle: { fontSize: 15, fontWeight: 'bold', textAlign: 'center', marginBottom: 15, color: '#1B2A6B', fontFamily: 'Cairo' },
-  commentItemRow: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EDF2F7', flexDirection: 'row-reverse' },
+  modalContent: { backgroundColor: Colors.white, height: '58%', padding: Spacing.lg, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl },
+  modalTitle: { fontSize: 15, fontWeight: 'bold', textAlign: 'center', marginBottom: Spacing.base, color: Colors.navyMid, fontFamily: 'Cairo' },
+  commentItemRow: { paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border, flexDirection: 'row-reverse' },
   commentBody: { flex: 1, alignItems: 'flex-end' },
   commentHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
-  commenterName: { fontSize: 12, fontWeight: 'bold', color: '#2D3748', marginRight: 6, fontFamily: 'Tajawal' },
-  commentContentText: { fontSize: 13, color: '#4A5568', textAlign: 'right', fontFamily: 'Tajawal' },
-  roleBadge: { fontSize: 9, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 5, overflow: 'hidden', fontWeight: 'bold', fontFamily: 'Tajawal' },
-  customerBadge: { backgroundColor: '#EBF8FF', color: '#2B6CB0' }, // أزرق للزبون
-  driverBadge: { backgroundColor: '#FEFCBF', color: '#744210' },   // ذهبي للموصل
-  inputRow: { flexDirection: 'row', marginTop: 15, alignItems: 'center' },
-  commentInput: { flex: 1, borderWidth: 1, borderColor: '#CBD5E0', borderRadius: 8, padding: 10, textAlign: 'right', backgroundColor: '#F8FAFC', fontFamily: 'Tajawal' },
-  sendBtn: { backgroundColor: '#F26522', paddingVertical: 12, paddingHorizontal: 18, borderRadius: 8, marginLeft: 5 },
-  disabledBtn: { backgroundColor: '#CBD5E0' }
+  commenterName: { fontSize: 12, fontWeight: 'bold', color: Colors.textBody, marginRight: 6, fontFamily: 'Tajawal' },
+  commentContentText: { fontSize: 13, color: Colors.textSecondary, textAlign: 'right', fontFamily: 'Tajawal' },
+  roleBadge: { fontSize: 9, paddingHorizontal: 5, paddingVertical: 1, borderRadius: Radius.sm, overflow: 'hidden', fontWeight: 'bold', fontFamily: 'Tajawal' },
+  customerBadge: { backgroundColor: Colors.customerBadgeBg, color: Colors.customerBadgeText },
+  driverBadge: { backgroundColor: Colors.driverBadgeBg, color: Colors.driverBadgeText },
+  inputRow: { flexDirection: 'row', marginTop: Spacing.base, alignItems: 'center' },
+  commentInput: { flex: 1, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.sm, padding: Spacing.sm, textAlign: 'right', backgroundColor: Colors.bgSubtle, fontFamily: 'Tajawal' },
+  sendBtn: { backgroundColor: Colors.primary, paddingVertical: Spacing.md, paddingHorizontal: 18, borderRadius: Radius.sm, marginLeft: Spacing.xs },
+  disabledBtn: { backgroundColor: Colors.border },
 });
