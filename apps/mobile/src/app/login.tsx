@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  ScrollView, Alert, ActivityIndicator, LogBox, Image,
+  ScrollView, Alert, ActivityIndicator, LogBox, Image, Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../supabase';
@@ -26,18 +26,26 @@ WebBrowser.maybeCompleteAuthSession();
 
 const logoAsset = require('../../assets/images/logo.png');
 
+type Mode = 'login' | 'signup';
+
 export default function LoginScreen() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [phone, setPhone] = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [phone, setPhone]       = useState('');
   const [password, setPassword] = useState('');
+  const [mode, setMode]         = useState<Mode>('login');
+
+  /** Normalize Algerian phone numbers to E.164 (+213xxxxxxxx) */
+  const normalizePhone = (raw: string) => {
+    let p = raw.trim().replace(/\s+/g, '');
+    if (p.startsWith('0')) p = '+213' + p.substring(1);
+    else if (!p.startsWith('+')) p = '+213' + p;
+    return p;
+  };
 
   const handleLogin = async () => {
     if (!phone || !password) return Alert.alert('تنبيه', 'الرجاء ملء الحقول');
-    let fmtPhone = phone.trim().replace(/\s+/g, '');
-    if (fmtPhone.startsWith('0')) fmtPhone = '+213' + fmtPhone.substring(1);
-    else if (!fmtPhone.startsWith('+')) fmtPhone = '+213' + fmtPhone;
-
+    const fmtPhone = normalizePhone(phone);
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ phone: fmtPhone, password });
@@ -51,16 +59,47 @@ export default function LoginScreen() {
     }
   };
 
+  const handleSignUp = async () => {
+    if (!phone || !password) return Alert.alert('تنبيه', 'الرجاء ملء الحقول');
+    if (password.length < 6) return Alert.alert('تنبيه', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+    const fmtPhone = normalizePhone(phone);
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signUp({ phone: fmtPhone, password });
+      if (error) throw error;
+      // After sign-up, auth guard routes to /register to complete the profile
+      router.push('/');
+    } catch (err: unknown) {
+      Alert.alert('خطأ', err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
+
+      if (Platform.OS === 'web') {
+        // On web: use a proper HTTPS redirect URL — the browser will navigate
+        // away to Google then land on /callback where tokens are parsed.
+        const origin     = typeof window !== 'undefined' ? window.location.origin : '';
+        const redirectTo = `${origin}/callback`;
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo },
+          // skipBrowserRedirect defaults to false — Supabase redirects the tab automatically
+        });
+        if (error) throw error;
+        // Page will navigate away; setLoading cleanup handled by unmount
+        return;
+      }
+
+      // Native (iOS / Android): open in-app browser, intercept the exp:// deep link.
       const redirectTo = Linking.createURL('/callback');
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo,
-          skipBrowserRedirect: true,
-        },
+        options: { redirectTo, skipBrowserRedirect: true },
       });
       if (error) throw error;
 
@@ -73,7 +112,6 @@ export default function LoginScreen() {
           };
           const acc = getParam(result.url, 'access_token');
           const ref = getParam(result.url, 'refresh_token');
-
           if (acc && ref) {
             const { error: se } = await supabase.auth.setSession({ access_token: acc, refresh_token: ref });
             if (se) throw se;
@@ -88,6 +126,8 @@ export default function LoginScreen() {
     }
   };
 
+  const isSignUp = mode === 'signup';
+
   return (
     <ScrollView
       contentContainerStyle={styles.container}
@@ -98,7 +138,9 @@ export default function LoginScreen() {
 
       {/* Heading */}
       <Text style={styles.title}>سوق إكسبريس</Text>
-      <Text style={styles.subtitle}>مرحباً بك — أدخل بياناتك للمتابعة</Text>
+      <Text style={styles.subtitle}>
+        {isSignUp ? 'أنشئ حساباً جديداً للبدء' : 'مرحباً بك — أدخل بياناتك للمتابعة'}
+      </Text>
 
       {/* Form card */}
       <View style={styles.card}>
@@ -120,14 +162,38 @@ export default function LoginScreen() {
           onChangeText={setPassword}
           secureTextEntry
           placeholderTextColor={Colors.textMuted}
+          onSubmitEditing={isSignUp ? handleSignUp : handleLogin}
+          returnKeyType="done"
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={isSignUp ? handleSignUp : handleLogin}
+          disabled={loading}
+        >
           {loading
             ? <ActivityIndicator color={Colors.white} />
-            : <Text style={styles.buttonText}>تسجيل الدخول</Text>}
+            : <Text style={styles.buttonText}>
+                {isSignUp ? 'إنشاء حساب' : 'تسجيل الدخول'}
+              </Text>}
         </TouchableOpacity>
       </View>
+
+      {/* Mode toggle */}
+      <TouchableOpacity
+        style={styles.toggleRow}
+        onPress={() => setMode(isSignUp ? 'login' : 'signup')}
+        disabled={loading}
+      >
+        <Text style={styles.toggleText}>
+          {isSignUp
+            ? 'لديك حساب بالفعل؟ '
+            : 'ليس لديك حساب؟ '}
+          <Text style={styles.toggleLink}>
+            {isSignUp ? 'تسجيل الدخول' : 'أنشئ حساباً'}
+          </Text>
+        </Text>
+      </TouchableOpacity>
 
       {/* Google OAuth */}
       <TouchableOpacity onPress={handleGoogleLogin} style={styles.googleButton} disabled={loading}>
@@ -174,7 +240,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
     ...Shadow.card,
   },
   fieldLabel: {
@@ -213,6 +279,21 @@ const styles = StyleSheet.create({
   buttonText: {
     color: Colors.white,
     fontSize: 17,
+    fontWeight: 'bold',
+    fontFamily: 'Cairo',
+  },
+  toggleRow: {
+    marginBottom: Spacing.lg,
+    paddingVertical: Spacing.xs,
+  },
+  toggleText: {
+    fontSize: 14,
+    color: Colors.textMuted,
+    fontFamily: 'Tajawal',
+    textAlign: 'center',
+  },
+  toggleLink: {
+    color: Colors.primary,
     fontWeight: 'bold',
     fontFamily: 'Cairo',
   },

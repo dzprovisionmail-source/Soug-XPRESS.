@@ -218,7 +218,7 @@ export default function RootEntryScreen() {
 
   // ==================== [ شاشة تغذية العروض التجارية ] ====================
   if (loading) {
-    return <View style={styles.centered}><ActivityIndicator size="large" color="#F26522" /></View>;
+    return <View style={styles.centered}><ActivityIndicator size="large" color={Colors.primary} /></View>;
   }
 
   return (
