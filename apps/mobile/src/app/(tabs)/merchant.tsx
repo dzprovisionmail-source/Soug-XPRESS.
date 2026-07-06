@@ -34,7 +34,6 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../../supabase';
-import { MERCHANT_COMMISSION_PCT } from '../../constants/financial';
 
 export default function MerchantDashboard() {
   // ── Auth / store identity ────────────────────────────────────────────────
@@ -49,9 +48,8 @@ export default function MerchantDashboard() {
   // TODO(Phase 3): Replace totalSales with real daily aggregation from `orders` table.
   const [isFirstMonth, setIsFirstMonth] = useState(true);
   const [totalSales, setTotalSales] = useState(8500);
-  const commission = isFirstMonth ? 0 : MERCHANT_COMMISSION_PCT;
-  const totalOwedToSite = totalSales * commission;
-  const netMerchantProfit = totalSales - totalOwedToSite;
+  // No commission on merchants — net profit always equals total sales.
+  const netMerchantProfit = totalSales;
 
   // ── Promo management (real Supabase `promotions` table) ──────────────────
   // UI shape: { id, name, originalPrice, promoPrice } (camelCase throughout)
@@ -293,7 +291,7 @@ export default function MerchantDashboard() {
         <Text style={styles.policyText}>
           {isFirstMonth
             ? 'سياسة المنصة تفعل لك ميزة إعفاء تام؛ أرباح مبيعاتك كاملة 100% لك دون أي اقتطاع!'
-            : `تفعيل عمولة المنصة القياسية المقدرة بـ ${MERCHANT_COMMISSION_PCT * 100}% فقط عن كل فاتورة.`}
+            : 'أرباح مبيعاتك كاملة 100% لك — المنصة لا تقتطع أي عمولة على المبيعات.'}
         </Text>
         <TouchableOpacity style={styles.togglePolicyButton} onPress={() => setIsFirstMonth(!isFirstMonth)}>
           <Text style={styles.togglePolicyText}>
@@ -307,12 +305,6 @@ export default function MerchantDashboard() {
         <View style={styles.financeRow}>
           <Text style={styles.financeValue}>{totalSales} د.ج</Text>
           <Text style={styles.financeLabel}>مبيعات اليوم الإجمالية:</Text>
-        </View>
-        <View style={styles.financeRow}>
-          <Text style={[styles.financeValue, { color: isFirstMonth ? '#137333' : '#C5221F' }]}>
-            {isFirstMonth ? '0 د.ج (عفو مجاني)' : `-${totalOwedToSite.toFixed(0)} د.ج`}
-          </Text>
-          <Text style={styles.financeLabel}>مستحقات المنصة ({isFirstMonth ? '0%' : `${MERCHANT_COMMISSION_PCT * 100}%`}):</Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.financeRow}>

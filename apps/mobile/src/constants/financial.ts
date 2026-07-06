@@ -33,7 +33,8 @@ export const DRIVER_FULL_CYCLE_DEBT_DZD =
   DRIVER_SUSPENSION_THRESHOLD * PLATFORM_CUT_PER_TRIP_DZD;
 
 /**
- * Merchant commission rate for month 2 onwards.
- * Month 1 is free (0%).
+ * Merchant commission rate — no commission on merchants.
+ * Platform charges 0%; kept as a named constant so any future
+ * policy change is a single-line edit here.
  */
-export const MERCHANT_COMMISSION_PCT = 0.05;
+export const MERCHANT_COMMISSION_PCT = 0;
