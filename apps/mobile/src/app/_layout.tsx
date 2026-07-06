@@ -72,9 +72,9 @@ function RootLayoutNav() {
       <Stack.Screen name="callback" />
       {/* admin — only visible to profiles.role = 'admin' (guarded inside admin.tsx) */}
       <Stack.Screen name="admin" />
-      {/* Orphaned full screens kept for Phase 2 decision (not yet wired into tabs) */}
-      <Stack.Screen name="merchant" />
-      <Stack.Screen name="delivery" />
+      {/* merchant and delivery are now canonical (tabs) screens only;
+          the top-level src/app/merchant.tsx and delivery.tsx have been
+          renamed to .bak and are no longer routed. */}
       <Stack.Screen name="(tabs)" />
     </Stack>
   );

@@ -1,158 +1,303 @@
+/**
+ * DeliveryDashboard — Canonical delivery driver screen.
+ *
+ * Merged from:
+ *   • src/app/delivery.tsx        → real orders, order completion, driver DB fetch
+ *   • src/app/(tabs)/delivery.tsx → progress bar, financial breakdown, BaridiMob card
+ *
+ * src/app/delivery.tsx has been renamed to delivery.tsx.bak (deprecated).
+ */
 import React, { useState, useEffect } from 'react';
+
+/** Typed result for the orders + stores join query */
+interface OrderQueryRow {
+  id: string;
+  items_summary: string;
+  subtotal: number;
+  delivery_fee: number;
+  status: string;
+  stores: { name: string; zone: string } | null;
+}
+import {
+  View, Text, StyleSheet, ScrollView,
+  TouchableOpacity, Alert, ActivityIndicator,
+} from 'react-native';
 import { supabase } from '../../supabase';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import {
+  BARIDIMOB_RIP,
+  DELIVERY_FEE_DZD,
+  PLATFORM_DELIVERY_COMMISSION_PCT,
+  DRIVER_PROFIT_PER_TRIP_DZD,
+  PLATFORM_CUT_PER_TRIP_DZD,
+  DRIVER_SUSPENSION_THRESHOLD,
+} from '../../constants/financial';
+
+interface ActiveOrder {
+  id: string;
+  items_summary: string;
+  subtotal: number;
+  delivery_fee: number;
+  status: string;
+  store_name: string;
+  store_zone: string;
+}
 
 export default function DeliveryDashboard() {
-  // محاكاة لعدد التوصيلات الحالية للموزع
-  const [deliveryCounter, setDeliveryCounter] = useState(0);
   const [driverId, setDriverId] = useState<string | null>(null);
+  const [driverName, setDriverName] = useState<string>('فارس التوصيل السريع');
+  const [deliveryCounter, setDeliveryCounter] = useState<number>(0);
+  const [isSuspended, setIsSuspended] = useState<boolean>(false);
+  const [totalOwed, setTotalOwed] = useState<number>(0);
+  const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const [isSuspended, setIsSuspended] = useState(false);
+  // Derived financial values — calculated from the real DB counter
+  const totalDriverEarnings = deliveryCounter * DRIVER_PROFIT_PER_TRIP_DZD;
+  const totalOwedToSite = deliveryCounter * PLATFORM_CUT_PER_TRIP_DZD;
 
   useEffect(() => {
-    async function loadDriverData() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          // No authenticated session — do not fall back to loading a random driver's data
-          console.log('[DeliveryTab] No active session. Skipping driver data load.');
-          return;
-        }
-        setDriverId(user.id);
-        const { data: driverData } = await supabase
-          .from('drivers')
-          .select('delivery_counter, is_suspended')
-          .eq('id', user.id)
-          .single();
-        if (driverData) {
-          setDeliveryCounter(driverData.delivery_counter || 0);
-          setIsSuspended(driverData.is_suspended || false);
-        }
-      } catch (err) { console.log(err); }
-    }
-    loadDriverData();
+    initializeDriver();
   }, []);
 
-  // إعدادات النظام المالي الثابتة
-  const DELIVERY_FEE = 100; // سعر التوصيل الثابت داخل المدينة
-  const SITE_COMMISSION_PCT = 0.20; // 20% نسبة الموقع
-  const SITE_CUT_PER_TRIP = DELIVERY_FEE * SITE_COMMISSION_PCT; // 20 دج عن كل توصيلة
-  const DRIVER_PROFIT_PER_TRIP = DELIVERY_FEE - SITE_CUT_PER_TRIP; // 80 دج صافي للموزع
-
-  // حساب المبالغ تلقائياً بناءً على العداد
-  const totalDriverEarnings = deliveryCounter * DRIVER_PROFIT_PER_TRIP; // صافي أرباح الموزع كاش
-  const totalOwedToSite = deliveryCounter * SITE_CUT_PER_TRIP; // المبلغ المطلوب دفعه للموقع
-
-  // حساب بريدي موب الرسمي والخاص بصاحب الموقع لمدينة عين الصفراء
-  const BARIDIMOB_RIP = "00799999000524201107"; 
-
-  const handleAcceptDelivery = async (id: string) => {
-    if (deliveryCounter >= 50) {
-      Alert.alert("تنبيه", "لقد تم توقيف الحساب مؤقتاً لتجاوز الحد المسموح (50 جولة). يرجى تسوية المستحقات.");
-      return;
-    }
+  /** Load the current driver's row from the `drivers` table */
+  const initializeDriver = async () => {
+    setLoading(true);
     try {
-      const nextCount = deliveryCounter + 1;
-      const willSuspend = nextCount >= 50;
-      
-      const { error } = await supabase.from('drivers').update({
-        delivery_counter: nextCount,
-        is_suspended: willSuspend
-      }).eq('id', driverId);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        // No authenticated session — do not fall back to loading a random driver's data
+        console.log('[DeliveryDashboard] No active session. Skipping driver data load.');
+        return;
+      }
+
+      const { data: driverData, error } = await supabase
+        .from('drivers')
+        .select('*')
+        .eq('id', user.id)
+        .single();
 
       if (error) throw error;
 
-      Alert.alert('قبول الطلب', 'تم قبول الشحنة بنجاح! توجه لاستلامها الآن.');
-      setDeliveryCounter(nextCount);
-      if (willSuspend) setIsSuspended(true);
-    } catch (err) {
-      Alert.alert('خطأ', 'تعذر تحديث بيانات التوصيل الحية.');
+      if (driverData) {
+        setDriverId(driverData.id);
+        setDriverName(driverData.name);
+        setDeliveryCounter(driverData.delivery_counter);
+        setIsSuspended(driverData.is_suspended);
+        setTotalOwed(driverData.total_owed_to_site);
+        fetchActiveOrder(driverData.id);
+      }
+    } catch (error: unknown) {
+      console.log('[DeliveryDashboard] Error initializing driver:',
+        error instanceof Error ? error.message : error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  /** Fetch the single active (non-completed) order assigned to this driver */
+  const fetchActiveOrder = async (id: string) => {
+    try {
+      const { data: orders, error } = await supabase
+        .from('orders')
+        .select(`
+          id, items_summary, subtotal, delivery_fee, status,
+          stores ( name, zone )
+        `)
+        .eq('driver_id', id)
+        .neq('status', 'مكتمل')
+        .limit(1);
+
+      if (error) throw error;
+
+      if (orders && orders.length > 0) {
+        const ord = orders[0] as unknown as OrderQueryRow;
+        setActiveOrder({
+          id: ord.id,
+          items_summary: ord.items_summary,
+          subtotal: ord.subtotal,
+          delivery_fee: ord.delivery_fee,
+          status: ord.status,
+          store_name: ord.stores?.name || 'محل مسجل',
+          store_zone: ord.stores?.zone || 'عين الصفراء',
+        });
+      } else {
+        setActiveOrder(null);
+      }
+    } catch (error: unknown) {
+      console.log('[DeliveryDashboard] Error fetching active order:',
+        error instanceof Error ? error.message : error);
+    }
+  };
+
+  /** Mark the active order complete and increment the driver counter */
+  const handleCompleteOrder = async () => {
+    if (!activeOrder || !driverId) return;
+    try {
+      setLoading(true);
+
+      // 1. Mark order as complete
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({ status: 'مكتمل' })
+        .eq('id', activeOrder.id);
+      if (orderError) throw orderError;
+
+      // 2. Increment driver counter (and suspend if threshold reached)
+      const nextCounter = deliveryCounter + 1;
+      const willSuspend = nextCounter >= DRIVER_SUSPENSION_THRESHOLD;
+      const { error: driverError } = await supabase
+        .from('drivers')
+        .update({ delivery_counter: nextCounter, is_suspended: willSuspend })
+        .eq('id', driverId);
+      if (driverError) throw driverError;
+
+      Alert.alert('ألف مبروك 🎉', 'تم إنهاء التوصيلة بنجاح وقبض حق التوصيل. قُمت بعمل رائع يا بطل!');
+      initializeDriver(); // Refresh all data from DB
+    } catch (error: unknown) {
+      Alert.alert('فشل تحديث الطلب', error instanceof Error ? error.message : 'خطأ غير معروف');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Loading state ──────────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#111A44" />
+        <Text style={{ marginTop: 10, fontFamily: 'Cairo', color: '#111A44', fontSize: 13 }}>
+          جاري تحديث بيانات الفارس ميدانياً...
+        </Text>
+      </View>
+    );
+  }
+
+  // ── Suspended full-screen view ─────────────────────────────────────────────
+
+  if (isSuspended) {
+    return (
+      <View style={styles.suspendedContainer}>
+        <Text style={styles.suspendedTitle}>🔴 تم تجميد حسابك مؤقتاً!</Text>
+        <Text style={styles.suspendedText}>
+          لقد استوفيت الحد الأقصى المسموح به وهو ({DRIVER_SUSPENSION_THRESHOLD} توصيلة) دون دفع مستحقات المنصة.
+        </Text>
+        <View style={styles.debtReportCard}>
+          <Text style={styles.debtReportLabel}>إجمالي الديون المستحقة للموقع:</Text>
+          <Text style={styles.debtReportValue}>{totalOwed} دج</Text>
+        </View>
+        <Text style={styles.instructionsText}>
+          يرجى إرسال المبلغ عبر حساب بريدي موب (BaridiMob) التالي لإعادة تفعيل حسابك فوراً من طرف الإدارة:
+        </Text>
+        <View style={styles.ccpCard}>
+          <Text style={styles.ccpNumber}>RIP: {BARIDIMOB_RIP}</Text>
+          <Text style={styles.ccpOwner}>بإسم: مدير منصة سوق إكسبريس</Text>
+        </View>
+        <Text style={styles.footerNote}>DZ Pro Vision • عين الصفراء</Text>
+      </View>
+    );
+  }
+
+  // ── Main screen ────────────────────────────────────────────────────────────
+
   return (
     <View style={styles.container}>
-      {/* هيدر لوحة التحكم */}
+
+      {/* Header: driver name + trip counter */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>لوحة تحكم الموصل 🛵</Text>
-        <Text style={styles.deliveryStatus}>
-          حالة الحساب: {deliveryCounter >= 50 ? "🔴 معطل مؤقتاً" : "🟢 نشط وجاهز"}
-        </Text>
+        <View style={styles.counterBox}>
+          <Text style={styles.counterValue}>{deliveryCounter} / {DRIVER_SUSPENSION_THRESHOLD}</Text>
+          <Text style={styles.counterLabel}>الرحلات المنفذة</Text>
+        </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={styles.headerTitle}>مرحباً بالفارس: {driverName}</Text>
+          <Text style={styles.headerSubtitle}>بوابة الموزع الرسمي داخل عين الصفراء</Text>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* 🚨 بطاقة التنبيه والحظر في حال الوصول إلى 50 توصيلة */}
-        {deliveryCounter >= 50 && (
-          <View style={styles.suspendedCard}>
-            <Text style={styles.suspendedTitle}>⚠️ وجب دفع مستحقات الموقع</Text>
-            <Text style={styles.suspendedText}>
-              لقد وصلت إلى <Text style={styles.boldText}>50 توصيلة</Text>. يرجى إرسال مبلغ <Text style={styles.boldText}>1000 د.ج</Text> إلى حساب بريدي موب التالي لإعادة تفعيل الحساب فوراً:
-            </Text>
-            <View style={styles.ripBox}>
-              <Text style={styles.ripLabel}>حساب BaridiMob (RIP):</Text>
-              <Text style={styles.ripValue}>{BARIDIMOB_RIP}</Text>
-            </View>
-            <Text style={styles.warningNote}>* ملاحظة: بعد إرسال الدفع، أرسل لقطة الشاشة إلى الإدارة ليتم فتح الحساب لبدء دورة جديدة.</Text>
-          </View>
-        )}
 
-        {/* 📊 حاسبة التوصيلات والملخص المالي الذكي */}
-        <Text style={styles.sectionTitle}>العداد والحاسبة المالية (دورة 50 توصيلة)</Text>
+        {/* ── Financial stats + progress bar (from tab version) ── */}
+        <Text style={styles.sectionTitle}>
+          العداد والحاسبة المالية (دورة {DRIVER_SUSPENSION_THRESHOLD} توصيلة)
+        </Text>
         <View style={styles.statsCard}>
-          <View style={styles.counterRow}>
-            <Text style={styles.counterValue}>{deliveryCounter} / 50</Text>
-            <Text style={styles.counterLabel}>التوصيلات المكتملة:</Text>
+          <View style={styles.statsCounterRow}>
+            <Text style={styles.statsCounterValue}>{deliveryCounter} / {DRIVER_SUSPENSION_THRESHOLD}</Text>
+            <Text style={styles.statsCounterLabel}>التوصيلات المكتملة:</Text>
           </View>
-          
-          {/* شريط تقدم بصري يوضح كم بقي له على الحظر */}
           <View style={styles.progressBarBackground}>
-            <View style={[styles.progressBarFill, { width: `${Math.min((deliveryCounter / 50) * 100, 100)}%` }]} />
+            <View
+              style={[
+                styles.progressBarFill,
+                // React Native accepts percentage strings as DimensionValue; cast needed for TS template literal
+                { width: `${Math.min((deliveryCounter / DRIVER_SUSPENSION_THRESHOLD) * 100, 100)}%` as `${number}%` },
+              ]}
+            />
           </View>
-
           <View style={styles.divider} />
-
           <View style={styles.financeRow}>
             <Text style={[styles.financeValue, { color: '#137333' }]}>{totalDriverEarnings} د.ج</Text>
-            <Text style={styles.financeLabel}>صافي أرباحك كاش (80 دج/رحلة):</Text>
+            <Text style={styles.financeLabel}>
+              صافي أرباحك كاش ({DRIVER_PROFIT_PER_TRIP_DZD} دج/رحلة):
+            </Text>
           </View>
-
           <View style={styles.financeRow}>
             <Text style={[styles.financeValue, { color: '#C5221F' }]}>{totalOwedToSite} د.ج</Text>
-            <Text style={styles.financeLabel}>مستحقات الموقع (20 دج/رحلة):</Text>
+            <Text style={styles.financeLabel}>
+              مستحقات الموقع ({PLATFORM_CUT_PER_TRIP_DZD} دج/رحلة):
+            </Text>
           </View>
         </View>
 
-        {/* 💳 بيانات الدفع بريدي موب الثابتة للمراجعة في أي وقت */}
+        {/* ── BaridiMob payment info (from tab version, now uses shared constant) ── */}
         <Text style={styles.sectionTitle}>معلومات الدفع للمنصة</Text>
         <View style={styles.infoCard}>
-          <Text style={styles.infoText}>يمكنك تصفية مستحقات الموقع في أي وقت عبر تطبيق بريدي موب لإعادة تصفير العداد:</Text>
-          <Text style={styles.ripTextSelectable}>RIP: {BARIDIMOB_RIP}</Text>
-          <Text style={styles.infoSubtext}>سعر التوصيل داخل المدينة ثابت: 100 د.ج (اقتطاع 20% للموقع).</Text>
+          <Text style={styles.infoText}>
+            يمكنك تصفية مستحقات الموقع في أي وقت عبر تطبيق بريدي موب لإعادة تصفير العداد:
+          </Text>
+          <Text style={styles.ripText}>RIP: {BARIDIMOB_RIP}</Text>
+          <Text style={styles.infoSubtext}>
+            سعر التوصيل داخل المدينة ثابت: {DELIVERY_FEE_DZD} د.ج (اقتطاع {PLATFORM_DELIVERY_COMMISSION_PCT * 100}% للموقع).
+          </Text>
         </View>
 
-        {/* 📦 طلبات التوصيل المتاحة حالياً */}
-        <Text style={styles.sectionTitle}>الطلبات المتاحة حالياً في المدينة</Text>
-        <View style={styles.requestCard}>
-          <View style={styles.requestHeader}>
-            <Text style={styles.requestId}>شحنة #D-909</Text>
-            <Text style={styles.earningsValue}>100 د.ج</Text>
-          </View>
-          <Text style={styles.routeText}>🏪 من: سوبرماركت الهناء (حي الضلعة)</Text>
-          <Text style={styles.routeText}>📍 إلى: حي قصر البلاد</Text>
-          
-          {/* TODO(Phase 2): Replace this hardcoded sample request with live orders
-              fetched from the `orders` table where driver_id IS NULL (available orders).
-              The mock order id 'D-909' does not exist in the database. */}
-          <TouchableOpacity
-            style={[styles.acceptButton, deliveryCounter >= 50 && styles.disabledButton]}
-            onPress={() => handleAcceptDelivery('D-909')}
-          >
-            <Text style={styles.acceptButtonText}>
-              {deliveryCounter >= 50 ? "الحساب معطل - وجب الدفع" : "قبول التوصيلة (100 دج)"}
+        {/* ── Active order (from full version — real Supabase orders) ── */}
+        <Text style={styles.sectionTitle}>📍 طلبيتك النشطة الحالية</Text>
+        {activeOrder ? (
+          <View style={styles.orderCard}>
+            <View style={styles.orderHeaderRow}>
+              <Text style={styles.orderStatusBadge}>{activeOrder.status}</Text>
+              <Text style={styles.orderIdText}>طلب رقم: {activeOrder.id.substring(0, 6)}</Text>
+            </View>
+            <Text style={styles.orderInfoLabel}>🏪 استلم السلعة من:</Text>
+            <Text style={styles.orderInfoValue}>
+              {activeOrder.store_name} ({activeOrder.store_zone})
             </Text>
-          </TouchableOpacity>
-        </View>
+            <Text style={styles.orderInfoLabel}>🛍️ محتويات الطلب للزبون:</Text>
+            <Text style={styles.orderInfoValue}>{activeOrder.items_summary}</Text>
+            <View style={styles.divider} />
+            <View style={styles.financialRow}>
+              <Text style={styles.financePrice}>{activeOrder.delivery_fee} دج</Text>
+              <Text style={styles.orderFinanceLabel}>🛵 حق التوصيل الخاص بك (ثابت):</Text>
+            </View>
+            <View style={styles.financialRow}>
+              <Text style={styles.financePrice}>{activeOrder.subtotal} دج</Text>
+              <Text style={styles.orderFinanceLabel}>💰 سعر السلع المطلوب تحصيله:</Text>
+            </View>
+            <TouchableOpacity style={styles.completeButton} onPress={handleCompleteOrder}>
+              <Text style={styles.completeButtonText}>
+                🏁 تم توصيل الطلب بنجاح واستلام المبلغ
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>
+              لا توجد طلبيات مسندة إليك حالياً بالمنصة. أنت في وضع الاستعداد لاستقبال وإقلاع الطلبات الجديدة! 🔄
+            </Text>
+          </View>
+        )}
 
       </ScrollView>
     </View>
@@ -160,46 +305,242 @@ export default function DeliveryDashboard() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F4F6F9' },
-  header: { backgroundColor: '#1B2A6B', padding: 20, alignItems: 'flex-end' },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'Cairo' },
-  deliveryStatus: { fontSize: 14, color: '#FFD54F', fontFamily: 'Tajawal', marginTop: 4, fontWeight: 'bold' },
+  container: { flex: 1, backgroundColor: '#FAFBFD' },
+
+  // Header
+  header: {
+    backgroundColor: '#111A44',
+    padding: 20,
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 3,
+    borderColor: '#F26522',
+    paddingTop: 45,
+  },
+  headerTitle: { fontSize: 15, fontWeight: 'bold', color: '#FFFFFF', fontFamily: 'Cairo' },
+  headerSubtitle: { fontSize: 10, color: '#A0AEC0', fontFamily: 'Tajawal', marginTop: 2 },
+  counterBox: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    padding: 8,
+    borderRadius: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    minWidth: 75,
+  },
+  counterValue: { fontSize: 13, fontWeight: 'bold', color: '#F26522', fontFamily: 'Tajawal' },
+  counterLabel: { fontSize: 9, color: '#FFFFFF', fontFamily: 'Tajawal', marginTop: 1 },
+
+  // Layout
   scrollContent: { paddingBottom: 30 },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#1B2A6B', marginHorizontal: 15, marginTop: 20, marginBottom: 10, textAlign: 'right', fontFamily: 'Cairo' },
-  
-  suspendedCard: { backgroundColor: '#FCE8E6', margin: 15, borderRadius: 12, padding: 15, borderWidth: 1, borderColor: '#C5221F' },
-  suspendedTitle: { fontSize: 16, fontWeight: 'bold', color: '#C5221F', textAlign: 'right', fontFamily: 'Cairo', marginBottom: 6 },
-  suspendedText: { fontSize: 13, color: '#333333', textAlign: 'right', fontFamily: 'Tajawal', lineHeight: 20 },
-  ripBox: { backgroundColor: '#FFFFFF', padding: 10, borderRadius: 8, marginTop: 10, borderWidth: 1, borderColor: '#EA4335', alignItems: 'center' },
-  ripLabel: { fontSize: 11, color: '#666', fontFamily: 'Tajawal' },
-  ripValue: { fontSize: 14, fontWeight: 'bold', color: '#1B2A6B', marginTop: 2 },
-  warningNote: { fontSize: 11, color: '#C5221F', textAlign: 'right', marginTop: 8, fontFamily: 'Tajawal', fontStyle: 'italic' },
-  
-  statsCard: { backgroundColor: '#FFFFFF', marginHorizontal: 15, borderRadius: 14, padding: 15, borderWidth: 1, borderColor: '#EFEFEF' },
-  counterRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  counterValue: { fontSize: 18, fontWeight: 'bold', color: '#1B2A6B' },
-  counterLabel: { fontSize: 14, fontWeight: 'bold', color: '#333', fontFamily: 'Cairo' },
-  progressBarBackground: { height: 8, backgroundColor: '#E0E0E0', borderRadius: 4, overflow: 'hidden', marginBottom: 10 },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#111A44',
+    marginHorizontal: 15,
+    marginTop: 22,
+    marginBottom: 10,
+    textAlign: 'right',
+    fontFamily: 'Cairo',
+  },
+  divider: { height: 1, backgroundColor: '#EDF2F7', marginVertical: 12 },
+
+  // Stats card (progress bar + financial breakdown)
+  statsCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 15,
+    borderRadius: 14,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#EFEFEF',
+  },
+  statsCounterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statsCounterValue: { fontSize: 18, fontWeight: 'bold', color: '#1B2A6B' },
+  statsCounterLabel: { fontSize: 14, fontWeight: 'bold', color: '#333', fontFamily: 'Cairo' },
+  progressBarBackground: {
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
   progressBarFill: { height: '100%', backgroundColor: '#F26522' },
-  divider: { height: 1, backgroundColor: '#F0F0F0', marginVertical: 10 },
-  financeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  financeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
   financeValue: { fontSize: 15, fontWeight: 'bold' },
   financeLabel: { fontSize: 13, color: '#666666', fontFamily: 'Tajawal' },
-  
-  infoCard: { backgroundColor: '#E8F0FE', marginHorizontal: 15, padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#1A73E8' },
+
+  // Payment info card
+  infoCard: {
+    backgroundColor: '#E8F0FE',
+    marginHorizontal: 15,
+    padding: 15,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1A73E8',
+  },
   infoText: { fontSize: 13, color: '#1B2A6B', textAlign: 'right', fontFamily: 'Tajawal' },
-  ripTextSelectable: { fontSize: 14, fontWeight: 'bold', color: '#F26522', textAlign: 'center', marginVertical: 8 },
+  ripText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#F26522',
+    textAlign: 'center',
+    marginVertical: 8,
+  },
   infoSubtext: { fontSize: 11, color: '#555555', textAlign: 'right', fontFamily: 'Tajawal' },
-  
-  requestCard: { backgroundColor: '#FFFFFF', marginHorizontal: 15, marginTop: 10, borderRadius: 14, padding: 15, borderWidth: 1, borderColor: '#EFEFEF' },
-  requestHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#F0F0F0', paddingBottom: 8, marginBottom: 10 },
-  requestId: { fontSize: 14, fontWeight: 'bold', color: '#1B2A6B' },
-  earningsValue: { fontSize: 16, fontWeight: 'bold', color: '#F26522' },
-  routeText: { fontSize: 13, color: '#444444', fontFamily: 'Tajawal', marginBottom: 4, textAlign: 'right' },
-  
-  acceptButton: { backgroundColor: '#F26522', paddingVertical: 12, borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  disabledButton: { backgroundColor: '#BCC1C6' },
-  acceptButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: 'bold', fontFamily: 'Cairo' },
-  boldText: { fontWeight: 'bold', color: '#C5221F' }
+
+  // Active order card
+  orderCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 15,
+    borderRadius: 14,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  orderHeaderRow: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  orderStatusBadge: {
+    backgroundColor: '#FFF4E5',
+    color: '#B76E00',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    fontSize: 11,
+    fontWeight: 'bold',
+    fontFamily: 'Cairo',
+    overflow: 'hidden',
+  },
+  orderIdText: { fontSize: 13, color: '#718096', fontWeight: 'bold', fontFamily: 'Tajawal' },
+  orderInfoLabel: {
+    fontSize: 12,
+    color: '#718096',
+    textAlign: 'right',
+    marginTop: 10,
+    fontFamily: 'Tajawal',
+  },
+  orderInfoValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#111A44',
+    textAlign: 'right',
+    marginTop: 2,
+    fontFamily: 'Cairo',
+  },
+  financialRow: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  financePrice: { fontSize: 15, fontWeight: 'bold', color: '#111A44', fontFamily: 'Tajawal' },
+  orderFinanceLabel: { fontSize: 12, color: '#4A5568', fontFamily: 'Tajawal' },
+  completeButton: {
+    backgroundColor: '#137333',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  completeButtonText: { color: '#FFFFFF', fontSize: 13, fontWeight: 'bold', fontFamily: 'Cairo' },
+
+  // Empty order state
+  emptyCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 15,
+    borderRadius: 12,
+    padding: 25,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  emptyText: {
+    fontSize: 12,
+    color: '#718096',
+    textAlign: 'center',
+    fontFamily: 'Tajawal',
+    lineHeight: 22,
+  },
+
+  // Suspended full-screen
+  suspendedContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    padding: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  suspendedTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#C5221F',
+    fontFamily: 'Cairo',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  suspendedText: {
+    fontSize: 13,
+    color: '#4A5568',
+    textAlign: 'center',
+    fontFamily: 'Tajawal',
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  debtReportCard: {
+    backgroundColor: '#FCE8E6',
+    padding: 15,
+    borderRadius: 12,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#F8D7DA',
+  },
+  debtReportLabel: { fontSize: 13, color: '#C5221F', fontFamily: 'Tajawal' },
+  debtReportValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#C5221F',
+    marginTop: 5,
+    fontFamily: 'Tajawal',
+  },
+  instructionsText: {
+    fontSize: 13,
+    color: '#4A5568',
+    textAlign: 'center',
+    fontFamily: 'Tajawal',
+    marginBottom: 15,
+    lineHeight: 22,
+  },
+  ccpCard: {
+    backgroundColor: '#111A44',
+    padding: 20,
+    borderRadius: 14,
+    width: '100%',
+    alignItems: 'center',
+  },
+  ccpNumber: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+    fontFamily: 'Tajawal',
+  },
+  ccpOwner: { fontSize: 12, color: '#F26522', fontFamily: 'Cairo', marginTop: 8 },
+  footerNote: { fontSize: 10, color: '#A0AEC0', fontFamily: 'Tajawal', marginTop: 40 },
 });
-                  

@@ -1,4 +1,5 @@
 - [Supabase credentials — env vars](supabase-env.md) — EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY; fail-fast error if missing
 - [Role source of truth](role-source-of-truth.md) — profiles.role via AuthContext only; never user_metadata.role (never written by this app)
 - [Navigation architecture](navigation-arch.md) — index.tsx is public; admin role can navigate freely; all other roles force-routed to their tab
-- [Phase 1 cleanup decisions](phase1-decisions.md) — what was changed, what is deferred, open questions for Phase 2
+- [Phase 1+2 cleanup decisions](phase1-decisions.md) — what was changed, what is deferred, open questions for Phase 3
+- [Financial constants](financial-constants.md) — BARIDIMOB_RIP and all platform rates live in src/constants/financial.ts; never hardcode elsewhere
