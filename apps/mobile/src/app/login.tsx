@@ -2,12 +2,13 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
-  ScrollView, Alert, ActivityIndicator, LogBox,
+  ScrollView, Alert, ActivityIndicator, LogBox, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../supabase';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import { Colors, Spacing, Radius, Shadow } from '../constants/theme';
 
 // Suppress expo-keep-awake warning on web (package not included in this project)
 try {
@@ -22,6 +23,8 @@ try {
 LogBox.ignoreLogs(['Unable to activate keep awake']);
 
 WebBrowser.maybeCompleteAuthSession();
+
+const logoAsset = require('../assets/images/logo.png');
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -64,7 +67,6 @@ export default function LoginScreen() {
       if (data?.url) {
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
         if (result.type === 'success' && result.url) {
-          // Extract tokens from the redirect URL
           const getParam = (url: string, param: string) => {
             const match = url.match(new RegExp(`[#?&]${param}=([^&#]*)`));
             return match ? match[1] : null;
@@ -87,29 +89,50 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>سوق إكسبريس ⚡</Text>
-      <Text style={styles.subtitle}>مرحباً بك في تطبيق سوق إكسبريس</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="رقم الهاتف"
-        value={phone}
-        onChangeText={setPhone}
-        keyboardType="phone-pad"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="كلمة المرور"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>تسجيل الدخول</Text>}
-      </TouchableOpacity>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
+      {/* Logo */}
+      <Image source={logoAsset} style={styles.logo} resizeMode="contain" />
+
+      {/* Heading */}
+      <Text style={styles.title}>سوق إكسبريس</Text>
+      <Text style={styles.subtitle}>مرحباً بك — أدخل بياناتك للمتابعة</Text>
+
+      {/* Form card */}
+      <View style={styles.card}>
+        <Text style={styles.fieldLabel}>رقم الهاتف</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="0xxxxxxxxx"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          placeholderTextColor={Colors.textMuted}
+        />
+
+        <Text style={styles.fieldLabel}>كلمة المرور</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="••••••••"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          placeholderTextColor={Colors.textMuted}
+        />
+
+        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+          {loading
+            ? <ActivityIndicator color={Colors.white} />
+            : <Text style={styles.buttonText}>تسجيل الدخول</Text>}
+        </TouchableOpacity>
+      </View>
+
+      {/* Google OAuth */}
       <TouchableOpacity onPress={handleGoogleLogin} style={styles.googleButton} disabled={loading}>
         {loading
-          ? <ActivityIndicator color="#1A202C" />
+          ? <ActivityIndicator color={Colors.textPrimary} />
           : <Text style={styles.googleButtonText}>الدخول السريع بواسطة Google 🚀</Text>}
       </TouchableOpacity>
     </ScrollView>
@@ -117,12 +140,98 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#f7fafc' },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#1a202c', marginBottom: 10 },
-  subtitle: { fontSize: 16, color: '#718096', marginBottom: 30, textAlign: 'center' },
-  input: { width: '100%', height: 50, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 15, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 15, textAlign: 'right' },
-  button: { width: '100%', height: 50, backgroundColor: '#3182ce', borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginTop: 10 },
-  buttonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  googleButton: { backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', marginTop: 20, width: '100%' },
-  googleButtonText: { color: '#1A202C', fontSize: 16, fontWeight: 'bold' },
+  container: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.xxl,
+    backgroundColor: Colors.bgScreen,
+  },
+  logo: {
+    width: 110,
+    height: 110,
+    marginBottom: Spacing.md,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: Colors.navyDark,
+    fontFamily: 'Cairo',
+    marginBottom: Spacing.xs,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: Colors.textMuted,
+    fontFamily: 'Tajawal',
+    marginBottom: Spacing.xl,
+    textAlign: 'center',
+  },
+  card: {
+    width: '100%',
+    backgroundColor: Colors.bgCard,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: Spacing.lg,
+    ...Shadow.card,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: Colors.textSecondary,
+    fontFamily: 'Cairo',
+    textAlign: 'right',
+    marginBottom: Spacing.xs,
+    marginTop: Spacing.sm,
+  },
+  input: {
+    width: '100%',
+    height: 50,
+    backgroundColor: Colors.bgSubtle,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.base,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: Spacing.sm,
+    textAlign: 'right',
+    fontFamily: 'Tajawal',
+    fontSize: 15,
+    color: Colors.textPrimary,
+  },
+  button: {
+    width: '100%',
+    height: 52,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: Spacing.md,
+    ...Shadow.primaryBtn,
+  },
+  buttonText: {
+    color: Colors.white,
+    fontSize: 17,
+    fontWeight: 'bold',
+    fontFamily: 'Cairo',
+  },
+  googleButton: {
+    backgroundColor: Colors.bgCard,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    width: '100%',
+    ...Shadow.card,
+  },
+  googleButtonText: {
+    color: Colors.textPrimary,
+    fontSize: 15,
+    fontWeight: 'bold',
+    fontFamily: 'Cairo',
+  },
 });

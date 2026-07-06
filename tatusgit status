@@ -1,0 +1,162 @@
+[1mdiff --git a/apps/mobile/src/app/(tabs)/_layout.tsx b/apps/mobile/src/app/(tabs)/_layout.tsx[m
+[1mindex 8a44163..ba09979 100644[m
+[1m--- a/apps/mobile/src/app/(tabs)/_layout.tsx[m
+[1m+++ b/apps/mobile/src/app/(tabs)/_layout.tsx[m
+[36m@@ -2,6 +2,7 @@[m [mimport React from 'react';[m
+ import { Tabs } from 'expo-router';[m
+ import { Text, StyleSheet } from 'react-native';[m
+ import { useAuth } from '../../context/AuthContext';[m
+[32m+[m[32mimport { Colors, Shadow } from '../../constants/theme';[m
+ [m
+ export default function TabsLayout() {[m
+   // Single source of truth: profiles.role from Supabase DB via AuthContext.[m
+[36m@@ -12,15 +13,16 @@[m [mexport default function TabsLayout() {[m
+   return ([m
+     <Tabs[m
+       screenOptions={{[m
+[31m-        tabBarActiveTintColor: '#F26522',[m
+[31m-        tabBarInactiveTintColor: '#888888',[m
+[32m+[m[32m        tabBarActiveTintColor: Colors.primary,[m
+[32m+[m[32m        tabBarInactiveTintColor: Colors.textMuted,[m
+         tabBarStyle: {[m
+[31m-          backgroundColor: '#FFFFFF',[m
+[31m-          borderTopWidth: 1,[m
+[31m-          borderTopColor: '#E0E0E0',[m
+[31m-          height: 60,[m
+[31m-          paddingBottom: 8,[m
+[31m-          paddingTop: 8,[m
+[32m+[m[32m          backgroundColor: Colors.white,[m
+[32m+[m[32m          // Shadow replaces the flat border for a more elevated look[m
+[32m+[m[32m          borderTopWidth: 0,[m
+[32m+[m[32m          height: 64,[m
+[32m+[m[32m          paddingBottom: 10,[m
+[32m+[m[32m          paddingTop: 6,[m
+[32m+[m[32m          ...Shadow.tabBar,[m
+         },[m
+         headerShown: false,[m
+       }}[m
+[36m@@ -30,7 +32,9 @@[m [mexport default function TabsLayout() {[m
+         options={{[m
+           title: 'الرئيسية',[m
+           tabBarLabel: ({ color }) => <Text style={[styles.labelText, { color }]}>السوق</Text>,[m
+[31m-          tabBarIcon: () => <Text style={styles.iconText}>🏠</Text>,[m
+[32m+[m[32m          tabBarIcon: ({ focused }) => ([m
+[32m+[m[32m            <Text style={[styles.iconText, focused && styles.iconActive]}>🏠</Text>[m
+[32m+[m[32m          ),[m
+         }}[m
+       />[m
+ [m
+[36m@@ -41,7 +45,9 @@[m [mexport default function TabsLayout() {[m
+           href: role === 'merchant' ? undefined : null,[m
+           title: 'التاجر',[m
+           tabBarLabel: ({ color }) => <Text style={[styles.labelText, { color }]}>متجري</Text>,[m
+[31m-          tabBarIcon: () => <Text style={styles.iconText}>🏪</Text>,[m
+[32m+[m[32m          tabBarIcon: ({ focused }) => ([m
+[32m+[m[32m            <Text style={[styles.iconText, focused && styles.iconActive]}>🏪</Text>[m
+[32m+[m[32m          ),[m
+         }}[m
+       />[m
+ [m
+[36m@@ -52,7 +58,9 @@[m [mexport default function TabsLayout() {[m
+           href: role === 'delivery' ? undefined : null,[m
+           title: 'الموصل',[m
+           tabBarLabel: ({ color }) => <Text style={[styles.labelText, { color }]}>التوصيل</Text>,[m
+[31m-          tabBarIcon: () => <Text style={styles.iconText}>🛵</Text>,[m
+[32m+[m[32m          tabBarIcon: ({ focused }) => ([m
+[32m+[m[32m            <Text style={[styles.iconText, focused && styles.iconActive]}>🛵</Text>[m
+[32m+[m[32m          ),[m
+         }}[m
+       />[m
+     </Tabs>[m
+[36m@@ -61,11 +69,17 @@[m [mexport default function TabsLayout() {[m
+ [m
+ const styles = StyleSheet.create({[m
+   labelText: {[m
+[31m-    fontSize: 12,[m
+[32m+[m[32m    fontSize: 11,[m
+     fontWeight: 'bold',[m
+     fontFamily: 'Cairo',[m
+[32m+[m[32m    marginTop: 1,[m
+   },[m
+   iconText: {[m
+[31m-    fontSize: 20,[m
+[32m+[m[32m    fontSize: 22,[m
+[32m+[m[32m    opacity: 0.7,[m
+[32m+[m[32m  },[m
+[32m+[m[32m  iconActive: {[m
+[32m+[m[32m    opacity: 1,[m
+[32m+[m[32m    transform: [{ scale: 1.08 }],[m
+   },[m
+ });[m
+[1mdiff --git a/apps/mobile/src/app/(tabs)/home.tsx b/apps/mobile/src/app/(tabs)/home.tsx[m
+[1mindex 78eba0a..453529e 100644[m
+[1m--- a/apps/mobile/src/app/(tabs)/home.tsx[m
+[1m+++ b/apps/mobile/src/app/(tabs)/home.tsx[m
+[36m@@ -2,24 +2,25 @@[m [mimport React, { useState, useEffect } from 'react';[m
+ import { supabase } from '../../supabase';[m
+ import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Image } from 'react-native';[m
+ import { useRouter } from 'expo-router';[m
+[32m+[m[32mimport { Colors, Spacing, Radius, Shadow } from '../../constants/theme';[m
+ [m
+[31m-// استيراد ملف الشعار المرفوع حديثاً (بحرف L كبير ومسار مباشر)[m
+[31m-const logoAsset = require('../../../Logo.png');[m
+[32m+[m[32m// Official logo from apps/mobile/assets/images/logo.png[m
+[32m+[m[32mconst logoAsset = require('../../assets/images/logo.png');[m
+ [m
+ const categories = [[m
+   { id: '1', title: 'سوبر ماركت', icon: '🛒' },[m
+[31m-  { id: '2', title: 'مطاعم', icon: '🍔' },[m
+[31m-  { id: '3', title: 'صيدليات', icon: '💊' },[m
+[32m+[m[32m  { id: '2', title: 'مطاعم',       icon: '🍔' },[m
+[32m+[m[32m  { id: '3', title: 'صيدليات',    icon: '💊' },[m
+   { id: '4', title: 'خضار وفواكه', icon: '🥦' },[m
+ ];[m
+ [m
+[31m-// TODO(Phase 2): Remove mock data. Replace with empty [] initial state and proper empty-state UI.[m
+[32m+[m[32m// TODO(Phase 3): Remove mock data. Replace with empty [] initial state and proper empty-state UI.[m
+ // This mock data shows when the `stores` Supabase table is empty.[m
+ // Real stores added by merchants via the merchant dashboard will replace this automatically.[m
+ const mockStores = [[m
+   { id: '1', name: 'متجر الهناء للمواد الغذائية', rating: '4.8', status: 'مفتوح', zone: 'حي الضلعة' },[m
+[31m-  { id: '2', name: 'مطعم ومشاوي القصر', rating: '4.9', status: 'مفتوح', zone: 'قصر البلاد' },[m
+[31m-  { id: '3', name: 'صيدلية الشفاء المركزية', rating: '4.7', status: 'مغلق', zone: 'وسط المدينة' },[m
+[32m+[m[32m  { id: '2', name: 'مطعم ومشاوي القصر',           rating: '4.9', status: 'مفتوح', zone: 'قصر البلاد' },[m
+[32m+[m[32m  { id: '3', name: 'صيدلية الشفاء المركزية',       rating: '4.7', status: 'مغلق', zone: 'وسط المدينة' },[m
+ ];[m
+ [m
+ export default function Home() {[m
+[36m@@ -29,14 +30,10 @@[m [mexport default function Home() {[m
+   useEffect(() => {[m
+     async function fetchLiveStores() {[m
+       try {[m
+[31m-        const { data, error } = await supabase[m
+[31m-          .from('stores')[m
+[31m-          .select('*');[m
+[31m-        if (data && !error) {[m
+[31m-          setStores(data);[m
+[31m-        }[m
+[32m+[m[32m        const { data, error } = await supabase.from('stores').select('*');[m
+[32m+[m[32m        if (data && !error) setStores(data);[m
+       } catch (err) {[m
+[31m-        console.log("Error fetching stores:", err);[m
+[32m+[m[32m        console.log('Error fetching stores:', err);[m
+       }[m
+     }[m
+     fetchLiveStores();[m
+[36m@@ -44,29 +41,32 @@[m [mexport default function Home() {[m
+ [m
+   return ([m
+     <View style={styles.container}>[m
+[31m-      {/* هيدر مخصص للزبون يجمع اللوقو، العربة، وتحديد الموقع في عين الصفراء */}[m
+[32m+[m[32m      {/* Header — logo (long-press → admin), location, cart */}[m
+       <View style={styles.header}>[m
+         <Text style={styles.cartIcon}>🛒</Text>[m
+[32m+[m
+         <View style={styles.locationContainer}>[m
+           <Text style={styles.locationLabel}>التوصيل إلى 📍</Text>[m
+           <Text style={styles.locationValue}>عين الصفراء، حي الضلعة</Text>[m
+         </View>[m
+[31m-        [m
+[31m-        {/* 🔐 المدخل السري: عند الضغط المطول على اللوقو تفتح لوحة تحكم المدير العام فوراً */}[m
+[32m+[m
+[32m+[m

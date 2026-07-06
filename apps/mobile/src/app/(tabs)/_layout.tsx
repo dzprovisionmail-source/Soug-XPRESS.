@@ -2,6 +2,7 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Text, StyleSheet } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { Colors, Shadow } from '../../constants/theme';
 
 export default function TabsLayout() {
   // Single source of truth: profiles.role from Supabase DB via AuthContext.
@@ -12,15 +13,16 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#F26522',
-        tabBarInactiveTintColor: '#888888',
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textMuted,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 1,
-          borderTopColor: '#E0E0E0',
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
+          backgroundColor: Colors.white,
+          // Shadow replaces the flat border for a more elevated look
+          borderTopWidth: 0,
+          height: 64,
+          paddingBottom: 10,
+          paddingTop: 6,
+          ...Shadow.tabBar,
         },
         headerShown: false,
       }}
@@ -30,7 +32,9 @@ export default function TabsLayout() {
         options={{
           title: 'الرئيسية',
           tabBarLabel: ({ color }) => <Text style={[styles.labelText, { color }]}>السوق</Text>,
-          tabBarIcon: () => <Text style={styles.iconText}>🏠</Text>,
+          tabBarIcon: ({ focused }) => (
+            <Text style={[styles.iconText, focused && styles.iconActive]}>🏠</Text>
+          ),
         }}
       />
 
@@ -41,7 +45,9 @@ export default function TabsLayout() {
           href: role === 'merchant' ? undefined : null,
           title: 'التاجر',
           tabBarLabel: ({ color }) => <Text style={[styles.labelText, { color }]}>متجري</Text>,
-          tabBarIcon: () => <Text style={styles.iconText}>🏪</Text>,
+          tabBarIcon: ({ focused }) => (
+            <Text style={[styles.iconText, focused && styles.iconActive]}>🏪</Text>
+          ),
         }}
       />
 
@@ -52,7 +58,9 @@ export default function TabsLayout() {
           href: role === 'delivery' ? undefined : null,
           title: 'الموصل',
           tabBarLabel: ({ color }) => <Text style={[styles.labelText, { color }]}>التوصيل</Text>,
-          tabBarIcon: () => <Text style={styles.iconText}>🛵</Text>,
+          tabBarIcon: ({ focused }) => (
+            <Text style={[styles.iconText, focused && styles.iconActive]}>🛵</Text>
+          ),
         }}
       />
     </Tabs>
@@ -61,11 +69,17 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   labelText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
     fontFamily: 'Cairo',
+    marginTop: 1,
   },
   iconText: {
-    fontSize: 20,
+    fontSize: 22,
+    opacity: 0.7,
+  },
+  iconActive: {
+    opacity: 1,
+    transform: [{ scale: 1.08 }],
   },
 });
