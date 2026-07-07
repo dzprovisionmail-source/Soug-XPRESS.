@@ -30,12 +30,15 @@ function RootLayoutNav() {
       return;
     }
 
-    // Authenticated user — check profile completeness
+    // Authenticated user — check profile completeness.
+    // Admins are exempt: their profile is set directly in Supabase and may
+    // legitimately lack a zone. All other roles must complete /register.
+    const isAdmin = userProfile?.role === 'admin';
     const hasNoRole = !userProfile?.role;
     const isProfileIncomplete =
       !userProfile?.full_name || !userProfile?.phone || !userProfile?.zone;
 
-    if (hasNoRole || isProfileIncomplete) {
+    if (!isAdmin && (hasNoRole || isProfileIncomplete)) {
       if (!inRegisterPage) router.replace('/register');
       return;
     }
@@ -48,7 +51,8 @@ function RootLayoutNav() {
       if (segs[0] !== '(tabs)' || segs[1] !== 'delivery')
         router.replace('/(tabs)/delivery');
     } else if (userProfile.role === 'admin') {
-      // Admins navigate freely — no forced redirect
+      // Always land on /admin; once there the tab bar handles sub-navigation.
+      if (segs[0] !== 'admin') router.replace('/admin');
     } else {
       // Default: customer
       if (segs[0] !== '(tabs)' || segs[1] !== 'home')
