@@ -31,7 +31,7 @@ type Mode = 'login' | 'signup';
 export default function LoginScreen() {
   const router = useRouter();
   const [loading, setLoading]   = useState(false);
-  const [phone, setPhone]       = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [mode, setMode]         = useState<Mode>('login');
 
@@ -44,11 +44,24 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
-    if (!phone || !password) return Alert.alert('تنبيه', 'الرجاء ملء الحقول');
-    const fmtPhone = normalizePhone(phone);
+    if (!identifier || !password) return Alert.alert('تنبيه', 'الرجاء ملء الحقول');
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ phone: fmtPhone, password });
+      let error;
+      if (identifier.includes('@')) {
+        // Email login — used by admin and any email-registered user
+        ({ error } = await supabase.auth.signInWithPassword({
+          email: identifier.trim(),
+          password,
+        }));
+      } else {
+        // Phone login — normalize to E.164 then authenticate
+        const fmtPhone = normalizePhone(identifier);
+        ({ error } = await supabase.auth.signInWithPassword({
+          phone: fmtPhone,
+          password,
+        }));
+      }
       if (error) throw error;
       // Auth guard in _layout.tsx handles post-login routing based on profiles.role
       router.push('/');
@@ -60,9 +73,10 @@ export default function LoginScreen() {
   };
 
   const handleSignUp = async () => {
-    if (!phone || !password) return Alert.alert('تنبيه', 'الرجاء ملء الحقول');
+    if (!identifier || !password) return Alert.alert('تنبيه', 'الرجاء ملء الحقول');
     if (password.length < 6) return Alert.alert('تنبيه', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-    const fmtPhone = normalizePhone(phone);
+    // Sign-up is phone-only for normal users; admin accounts are created server-side.
+    const fmtPhone = normalizePhone(identifier);
     setLoading(true);
     try {
       const { error } = await supabase.auth.signUp({ phone: fmtPhone, password });
@@ -144,13 +158,15 @@ export default function LoginScreen() {
 
       {/* Form card */}
       <View style={styles.card}>
-        <Text style={styles.fieldLabel}>رقم الهاتف</Text>
+        <Text style={styles.fieldLabel}>رقم الهاتف أو البريد الإلكتروني</Text>
         <TextInput
           style={styles.input}
-          placeholder="0xxxxxxxxx"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
+          placeholder="0668265490 أو admin@example.com"
+          value={identifier}
+          onChangeText={setIdentifier}
+          keyboardType="default"
+          autoCapitalize="none"
+          autoCorrect={false}
           placeholderTextColor={Colors.textMuted}
         />
 
