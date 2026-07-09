@@ -3,3 +3,4 @@
 - [Navigation architecture](navigation-arch.md) — index.tsx is public; admin role can navigate freely; all other roles force-routed to their tab
 - [Phase 1+2 cleanup decisions](phase1-decisions.md) — what was changed, what is deferred, open questions for Phase 3
 - [Financial constants](financial-constants.md) — BARIDIMOB_RIP and all platform rates live in src/constants/financial.ts; never hardcode elsewhere
+- [Import setup gotchas](import-setup-gotchas.md) — imported repo needed npm install + had a leftover unresolved git conflict blocking the bundler; check both before assuming code is broken
