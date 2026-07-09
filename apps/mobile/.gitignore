@@ -1,11 +1,15 @@
 node_modules/
 apps/mobile/node_modules/
+apps/mobile-v2/node_modules/
 
 # Environment variables — never commit real credentials
 .env
 .env.local
 apps/mobile/.env
+apps/mobile-v2/.env
 
 # Expo local device state — not relevant to other developers
 .expo/devices.json
 apps/mobile/.expo/devices.json
+apps/mobile-v2/.expo/devices.json
+apps/mobile-v2/.expo/
