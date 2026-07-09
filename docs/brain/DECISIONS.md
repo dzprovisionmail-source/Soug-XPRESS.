@@ -57,6 +57,12 @@ This file records every approved decision in Soug-XPRESS V2. Decisions marked **
 - **Decision:** The `docs/brain/` directory is the permanent AI handoff and project memory system. It contains 8 files that any future AI agent must read to continue the project.
 - **Rationale:** Without a persistent memory, each new session risks contradicting prior decisions or re-discovering context. The Brain ensures continuity.
 
+### D-009 — Architecture Foundation Frozen
+- **Status:** FROZEN
+- **Date:** 2026-07-09
+- **Decision:** The 5 core architecture documents (`02_DATABASE_FOUNDATION.md`, `04_RLS_POLICIES.md`, `05_SOCIAL_COMMERCE_STRATEGY.md`, `06_USER_EXPERIENCE_JOURNEYS.md`, `14_DELIVERY_AND_FINANCE_MODEL.md`) are frozen as the permanent architecture of Soug-XPRESS V2.
+- **Rationale:** Founder explicitly instructed to freeze these documents as the current foundation before proceeding to the Design System.
+
 ---
 
 ## Pending Decisions (Awaiting Founder Approval)

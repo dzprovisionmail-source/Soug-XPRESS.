@@ -2,7 +2,7 @@
 
 ## The Immediate Next Task
 
-**Wait for Founder approval of the Constitution blueprint and the newly created Architecture documents.**
+**Wait for Founder approval of the Constitution blueprint, the Architecture documents, and the Design System document.**
 
 The Constitution proposal at `docs/v2/CONSTITUTION_PROPOSAL.md` contains a structure and chapter hierarchy (13 articles + Preamble + Closing). The next task is to advance this blueprint toward Founder approval, then write chapters one by one.
 
@@ -60,10 +60,10 @@ Each arrow is a gate. No stage begins until the previous stage is approved by th
 Your next action is:
 
 1. Read `00_START_HERE.md` and `AI_HANDOFF.md`.
-2. Review the Architecture foundation documents (02, 04, 05, 06, 14) in `docs/v2/`.
-3. Check `DECISIONS.md` for the status of the Constitution blueprint.
-4. If the blueprint is approved, proceed to drafting Constitution chapters one by one.
-5. If awaiting approval, ask the Founder for feedback on the architecture foundation.
+2. Review the Architecture foundation documents (02, 04, 05, 06, 14) and the Design System document (07) in `docs/v2/`.
+3. Check `DECISIONS.md` for the status of the Constitution blueprint and the frozen architecture.
+4. If the blueprint and architecture are approved, proceed to drafting Constitution chapters one by one.
+5. If awaiting approval, ask the Founder for feedback on the architecture foundation and the Design System.
 
 Do not proceed to any implementation work. The project is in documentation-first mode.
 
