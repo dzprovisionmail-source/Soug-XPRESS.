@@ -60,10 +60,10 @@ Each arrow is a gate. No stage begins until the previous stage is approved by th
 Your next action is:
 
 1. Read `00_START_HERE.md` and `AI_HANDOFF.md`.
-2. Review the Architecture foundation documents (02, 04, 05, 06, 14) and the Design System document (07) in `docs/v2/`.
+2. Review the complete Design System documentation in `docs/design-system/`.
 3. Check `DECISIONS.md` for the status of the Constitution blueprint and the frozen architecture.
 4. If the blueprint and architecture are approved, proceed to drafting Constitution chapters one by one.
-5. If awaiting approval, ask the Founder for feedback on the architecture foundation and the Design System.
+5. If awaiting approval, ask the Founder for feedback on the complete Design System.
 
 Do not proceed to any implementation work. The project is in documentation-first mode.
 
